@@ -1,19 +1,42 @@
-from typing import Iterator
-
 import pandas as pd
 
 
 class BaseIndex(object):
+    """Base class for all index classes.
+
+    This doesn't have any functionality but simple serve as an interface for all
+    subclasses to implement.
+    """
+
     def keys(self, df: pd.DataFrame) -> set:
+        """Returns a set of keys that should be used to retrieve buckets
+
+        Args:
+            df (pd.DataFrame): the data to index
+
+        Returns:
+            a set of bucket keys
+        """
         raise NotImplementedError()
 
     def bucket(self, df: pd.DataFrame, key: any) -> pd.DataFrame:
+        """Retrieve a bucket given the original data and a bucket key
+
+        Args:
+            df (pd.DataFrame): the data to index
+            key (any): key of bucket to retrieve
+
+        Returns:
+            rows in bucket
+        """
         raise NotImplementedError()
 
 
 class NoopIndex(BaseIndex):
-    """
-    This pair every record with every other record. It's like not using an index.
+    """Returns all data as a single bucket.
+
+    Using this is like using no index at all. Useful for when there are
+    not too many rows.
     """
 
     def __init__(self):
@@ -29,12 +52,14 @@ class NoopIndex(BaseIndex):
 
 
 class ColumnsIndex(BaseIndex):
-    """
-    This pair records with the same value in specified columns.
+    """Split data into multiple buckets based on one or more columns.
     """
 
-    def __init__(self, cols):
-        self._cols = cols
+    def __init__(self, cols: str or list(str)):
+        if type(cols) is str:
+            self._cols = [cols]
+        else:
+            self._cols = cols
 
     def keys(self, df: pd.DataFrame) -> set:
         return set(

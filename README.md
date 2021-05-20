@@ -10,12 +10,36 @@ This package mostly interface with Pandas so using Pandas is mandatory.
 
 ## Basic usage
 
-```python
-from datamatch import ThresholdMatcher, ColumnsIndex, JaroWinklerSimiarity
+Match records between 2 frames
 
-matcher = ThresholdMatcher(df1, df2, ColumnsIndex(['year_of_birth']), {
+```python
+from datamatch import (
+    ThresholdMatcher, ColumnsIndex, JaroWinklerSimiarity, DateSimilarity
+)
+
+matcher = ThresholdMatcher(ColumnsIndex(['year_of_birth']), {
     'first_name': JaroWinklerSimilarity(),
     'last_name': JaroWinklerSimilarity()
-})
-print(matcher.get_index_pairs_within_thresholds(0.8))
+}, df1, df2)
+
+# print sample pairs within different score ranges
+print(matcher.get_sample_pairs())
+
+# print all pairs that score 0.8 or higher
+print(matcher.get_all_pairs(0.8))
+
+# save matching result to an excel file
+matcher.save_pairs_to_excel('match_result.xlsx', 0.8)
+
+# get index pairs of matched records
+matches = matcher.get_index_pairs_within_thresholds(0.8)
+```
+
+To deduplicate records in a frame, pass in just one frame instead of 2
+
+```python
+matcher = ThresholdMatcher(ColumnsIndex(['year_of_birth']), {
+    'first_name': JaroWinklerSimilarity(),
+    'last_name': JaroWinklerSimilarity()
+}, df)
 ```

@@ -7,23 +7,45 @@ from .indices import BaseIndex
 
 
 class BasePairer(object):
+    """Arrange records into pairs to be matched
+
+    This base class only serve as the interface for subclasses
+    to implement
+    """
+
     def __init__(self, index: Type[BaseIndex]) -> None:
         self._index = index
 
     @property
     def frame_a(self) -> pd.DataFrame:
+        """Returns the left frame"""
         raise NotImplementedError()
 
     @property
     def frame_b(self) -> pd.DataFrame:
+        """Returns the right frame"""
         raise NotImplementedError()
 
     def pairs(self) -> Iterator:
+        """Returns pairs of records that should be matched"""
         raise NotImplementedError()
 
 
 class MatchPairer(BasePairer):
+    """Pair records from 2 frames using the provided index
+    """
+
     def __init__(self, dfa: pd.DataFrame, dfb: pd.DataFrame, index: Type[BaseIndex]) -> None:
+        """Creates new instance of MatchPairer
+
+        Args:
+            dfa (pd.DataFrame): the left frame
+            dfb (pd.DataFrame): the right frame
+            index (subclass of BaseIndex): the index to group records
+
+        Returns:
+            no value
+        """
         super().__init__(index)
         if dfa.index.duplicated().any() or dfb.index.duplicated().any():
             raise ValueError(
@@ -58,7 +80,23 @@ class MatchPairer(BasePairer):
 
 
 class DeduplicatePairer(BasePairer):
+    """Pairs records from a single frame to deduplicate
+
+    As this class is only initialized with a single frame, both
+    `frame_a` and `frame_b` returns this same frame.
+    """
+
     def __init__(self, df: pd.DataFrame, index: Type[BaseIndex]) -> None:
+        """Creates new instance of DeduplicatePairer
+
+        Args:
+            df (pd.DataFrame): the frame to extract records from
+            index (subclass of BaseIndex): the index used to group
+                records
+
+        Returns:
+            no value
+        """
         super().__init__(index)
         if df.index.duplicated().any():
             raise ValueError(
@@ -80,9 +118,3 @@ class DeduplicatePairer(BasePairer):
             rows = self._index.bucket(self._df, key)
             for row_a, row_b in itertools.combinations(rows.iterrows(), 2):
                 yield row_a, row_b
-
-
-def build_pairer(index: Type[BaseIndex], dfa: pd.DataFrame, dfb: pd.DataFrame or None = None) -> Type[BasePairer]:
-    if dfb is None:
-        return DeduplicatePairer(dfa, index)
-    return MatchPairer(dfa, dfb, index)

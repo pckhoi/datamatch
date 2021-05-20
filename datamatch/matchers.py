@@ -8,23 +8,42 @@ import pandas as pd
 import numpy as np
 
 from .indices import BaseIndex
-from .pairers import build_pairer
+from .pairers import DeduplicatePairer, MatchPairer
 
 
 class ThresholdMatcher(object):
-    """
-    Match records between 2 dataframes using similarity score.
+    """Matchs records by computing similarity score.
+
     Final match results can be retrieved with a similarity threshold.
     """
 
-    def __init__(self, index: Type[BaseIndex], fields: dict, dfa: pd.DataFrame, dfb: pd.DataFrame or None = None):
-        self._pairer = build_pairer(index, dfa, dfb)
+    def __init__(self, index: Type[BaseIndex], fields: dict, dfa: pd.DataFrame, dfb: pd.DataFrame or None = None) -> None:
+        """Creates new instance of ThresholdMatcher.
+
+        If it is given 2 dataframes at the end then it will try to match records between them.
+        If given only one dataframe then it attempt to detect duplicates in this dataframe.
+
+        Args:
+            index (subclass of BaseIndex): how to index the data
+            fields (dict): mapping between field name and similarity class to use
+            dfa (pd.DataFrame): data to match. Its index must not contain duplicates.
+            dfb (pd.DataFrame): if this is set then match this with `dfa`, otherwise
+                deduplicate `dfa`. If given then its index must not contain
+                duplicates and its columns must match `dfa`'s.
+
+        Returns:
+            no value
+        """
+        if dfb is None:
+            self._pairer = DeduplicatePairer(dfa, index)
+        else:
+            self._pairer = MatchPairer(dfa, dfb, index)
         self._fields = fields
         self._score_all_pairs()
 
     def _score_pair(self, ser_a, ser_b):
         """
-        Calculate similarity value (0 <= sim_val <= 1) for a pair of records
+        Calculate similarity value(0 <= sim_val <= 1) for a pair of records
         """
         sim_vec = dict()
         for k, scls in self._fields.items():
@@ -65,17 +84,31 @@ class ThresholdMatcher(object):
         self._remove_lesser_matches()
         self._keys = [t[0] for t in self._pairs]
 
-    def get_index_pairs_within_thresholds(self, lower_bound=0.7, upper_bound=1):
-        """
-        Returns index pairs with similarity score within specified thresholds
+    def get_index_pairs_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list:
+        """Returns index pairs with similarity score within specified thresholds
+
+        Args:
+            lower_bound (float): pairs that score lower than this won't be returned
+            upper_bound (float): pairs that score higher than this won't be returned
+
+        Returns:
+            list of tuples of index of matching records
         """
         return [t[1:] for t in self._pairs[
             bisect_left(self._keys, lower_bound):
             bisect(self._keys, upper_bound)]]
 
-    def get_sample_pairs(self, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05):
-        """
-        Returns samples of record pairs for each range of similarity score
+    def get_sample_pairs(self, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05) -> pd.DataFrame:
+        """Returns samples of record pairs for each range of similarity score
+
+        Args:
+            sample_count (int): number of samples in each range
+            lower_bound (float): ranges with score lower than this won't be included
+            upper_bound (float): ranges with score higher than this won't be included
+            step (float): width of each range.
+
+        Returns:
+            a multi-indexed dataframe that only contain samples for each range
         """
         sample_records = []
         ranges = list(np.arange(upper_bound, lower_bound, -step)
@@ -102,7 +135,16 @@ class ThresholdMatcher(object):
             sample_records,
             index=["score_range", "pair_idx", "sim_score", "row_key"])
 
-    def get_all_pairs(self, lower_bound=0.7, upper_bound=1):
+    def get_all_pairs(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
+        """Returns all matching pairs between a lower bound and upper bound
+
+        Args:
+            lower_bound (float): pairs that score lower than this won't be returned
+            upper_bound (float): pairs that score higher than this won't be returned
+
+        Returns:
+            a multi-indexed dataframe that contains all matching pairs
+        """
         records = []
         pairs = reversed(self._pairs[
             bisect_left(self._keys, lower_bound):
@@ -119,10 +161,34 @@ class ThresholdMatcher(object):
             records,
             index=["pair_idx", "sim_score", "row_key"])
 
-    def save_pairs_to_excel(self, name, match_threshold, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05):
+    def save_pairs_to_excel(self, name: str, match_threshold: float, sample_counts: int = 5, lower_bound: float = 0.7, step: float = 0.05) -> None:
+        """Save matching results to an Excel file.
+
+        This will create an Excel file with 3 sheets:
+        - Sample pairs: sample pairs for each score range, similar to
+            output of `get_sample_pairs`
+        - All pairs: all pairs that score higher than lower bound ordered
+            by score
+        - Decision: selected threshold and how many pairs are counted
+            as matched
+
+        Args:
+            name (string): excel file to save to
+            match_threshold (float): the score above which a pair is
+                considered matched
+            sample_counts (int): number of samples per score range in
+                "Sample pairs" sheet.
+            lower_bound (float): pairs score lower than this will be
+                eliminated from both "Sample pairs" and "All pairs"
+                sheet.
+            step (float): width of each range in "Sample pairs" sheet
+
+        Returns:
+            no value
+        """
         samples = self.get_sample_pairs(
-            sample_counts, lower_bound, upper_bound, step)
-        pairs = self.get_all_pairs(lower_bound, upper_bound)
+            sample_counts, lower_bound, 1, step)
+        pairs = self.get_all_pairs(lower_bound, 1)
         dec = {
             "match_threshold": match_threshold,
             "number_of_matched_pairs": len(self._keys) - bisect_left(self._keys, match_threshold)
@@ -134,7 +200,16 @@ class ThresholdMatcher(object):
             pairs.to_excel(writer, sheet_name='All pairs')
             dec_sr.to_excel(writer, sheet_name="Decision")
 
-    def print_decision(self, match_threshold):
+    def print_decision(self, match_threshold: float):
+        """Print number and percentage of matched pairs for selected threshold
+
+        Args:
+            match_threshold (float): the score above which a pair is
+                considered matched
+
+        Returns:
+            no value
+        """
         pairs = self.get_index_pairs_within_thresholds(
             lower_bound=match_threshold)
         num_pairs = len(pairs)
