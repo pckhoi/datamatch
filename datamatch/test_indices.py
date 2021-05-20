@@ -21,40 +21,50 @@ class BaseIndexTestCase(unittest.TestCase):
 
 class TestNoopIndex(BaseIndexTestCase):
     def test_index(self):
-        dfa = pd.DataFrame([[1, 2], [3, 4]])
-        dfb = pd.DataFrame([[5, 6], [7, 8]])
+        df = pd.DataFrame([[1, 2], [3, 4]])
         idx = NoopIndex()
-        idx.index(dfa, dfb)
-        self.assertEqual(list(idx), [(dfa, dfb)])
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([0]))
+        assert_frame_equal(idx.bucket(df, 0), df)
 
 
 class TestColumnsIndex(BaseIndexTestCase):
     def test_index(self):
         cols = ["c", "d"]
-        dfa = pd.DataFrame(
+        df = pd.DataFrame(
             [[1, 2], [2, 4], [3, 4]], index=["x", "y", "z"], columns=cols)
-        dfb = pd.DataFrame(
-            [[1, 6], [7, 8], [2, 7]], index=["u", "v", "w"], columns=cols)
         idx = ColumnsIndex(["c"])
-        idx.index(dfa, dfb)
-        self.assert_pairs_list_equal(list(idx), [
-            (pd.DataFrame([[1, 2]], index=["x"], columns=cols),
-             pd.DataFrame([[1, 6]], index=["u"], columns=cols)),
-            (pd.DataFrame([[2, 4]], index=["y"], columns=cols),
-             pd.DataFrame([[2, 7]], index=["w"], columns=cols))
-        ])
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([(1,), (2,), (3,)]))
+        assert_frame_equal(
+            idx.bucket(df, (1,)),
+            pd.DataFrame([[1, 2]], index=["x"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (2,)),
+            pd.DataFrame([[2, 4]], index=["y"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (3,)),
+            pd.DataFrame([[3, 4]], index=["z"], columns=cols)
+        )
 
     def test_multi_index(self):
         cols = ["c", "d"]
-        dfa = pd.DataFrame(
-            [[1, 2], [2, 4], [3, 4], [7, 8]], index=["z", "x", "c", "v"], columns=cols)
-        dfb = pd.DataFrame(
-            [[1, 6], [3, 4], [7, 8], [2, 7]], index=["q", "w", "e", "r"], columns=cols)
+        df = pd.DataFrame(
+            [[1, 2], [2, 4], [3, 4]], index=["z", "x", "c"], columns=cols)
         idx = ColumnsIndex(["c", "d"])
-        idx.index(dfa, dfb)
-        self.assert_pairs_list_equal(list(idx), [
-            (pd.DataFrame([[3, 4]], index=["c"], columns=cols),
-             pd.DataFrame([[3, 4]], index=["w"], columns=cols)),
-            (pd.DataFrame([[7, 8]], index=["v"], columns=cols),
-             pd.DataFrame([[7, 8]], index=["e"], columns=cols))
-        ])
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([(1, 2), (2, 4), (3, 4)]))
+        assert_frame_equal(
+            idx.bucket(df, (1, 2)),
+            pd.DataFrame([[1, 2]], index=["z"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (2, 4)),
+            pd.DataFrame([[2, 4]], index=["x"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (3, 4)),
+            pd.DataFrame([[3, 4]], index=["c"], columns=cols)
+        )

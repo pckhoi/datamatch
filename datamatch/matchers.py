@@ -1,9 +1,14 @@
-import pandas as pd
-import numpy as np
 import itertools
 import math
 from bisect import bisect_left, bisect
 from operator import itemgetter
+from typing import Type
+
+import pandas as pd
+import numpy as np
+
+from .indices import BaseIndex
+from .pairers import build_pairer
 
 
 class ThresholdMatcher(object):
@@ -12,21 +17,9 @@ class ThresholdMatcher(object):
     Final match results can be retrieved with a similarity threshold.
     """
 
-    def __init__(self, dfa, dfb, index, fields):
-        if dfa.index.duplicated().any() or dfb.index.duplicated().any():
-            raise ValueError(
-                "Dataframe index contains duplicates. Both frames need to have index free of duplicates."
-            )
-        if set(dfa.columns) != set(dfb.columns):
-            raise ValueError(
-                "Dataframe columns are not equal."
-            )
-
+    def __init__(self, index: Type[BaseIndex], fields: dict, dfa: pd.DataFrame, dfb: pd.DataFrame or None = None):
+        self._pairer = build_pairer(index, dfa, dfb)
         self._fields = fields
-        self._index = index
-        self._dfa = dfa
-        self._dfb = dfb
-
         self._score_all_pairs()
 
     def _score_pair(self, ser_a, ser_b):
@@ -64,13 +57,10 @@ class ThresholdMatcher(object):
         """
         Calculate similarity value for all pairs of records
         """
-        self._index.index(self._dfa, self._dfb)
         pairs = []
-        for rows_a, rows_b in self._index:
-            for idx_a, ser_a in rows_a.iterrows():
-                for idx_b, ser_b in rows_b.iterrows():
-                    sim = self._score_pair(ser_a, ser_b)
-                    pairs.append((sim, idx_a, idx_b))
+        for (idx_a, ser_a), (idx_b, ser_b) in self._pairer.pairs():
+            sim = self._score_pair(ser_a, ser_b)
+            pairs.append((sim, idx_a, idx_b))
         self._pairs = sorted(pairs, key=itemgetter(0))
         self._remove_lesser_matches()
         self._keys = [t[0] for t in self._pairs]
@@ -103,11 +93,11 @@ class ThresholdMatcher(object):
                 sample_records.append(dict([
                     ("score_range", score_range), ("pair_idx", pair_idx),
                     ("sim_score", sim_score), ("row_key", idx_a)
-                ] + list(self._dfa.loc[idx_a].to_dict().items())))
+                ] + list(self._pairer.frame_a.loc[idx_a].to_dict().items())))
                 sample_records.append(dict([
                     ("score_range", score_range), ("pair_idx", pair_idx),
                     ("sim_score", sim_score), ("row_key", idx_b)
-                ] + list(self._dfb.loc[idx_b, self._dfa.columns].to_dict().items())))
+                ] + list(self._pairer.frame_b.loc[idx_b].to_dict().items())))
         return pd.DataFrame.from_records(
             sample_records,
             index=["score_range", "pair_idx", "sim_score", "row_key"])
@@ -121,10 +111,10 @@ class ThresholdMatcher(object):
             sim_score, idx_a, idx_b = pair
             records.append(dict([
                 ("pair_idx", pair_idx), ("sim_score", sim_score), ("row_key", idx_a)
-            ] + list(self._dfa.loc[idx_a].to_dict().items())))
+            ] + list(self._pairer.frame_a.loc[idx_a].to_dict().items())))
             records.append(dict([
                 ("pair_idx", pair_idx), ("sim_score", sim_score), ("row_key", idx_b)
-            ] + list(self._dfb.loc[idx_b, self._dfa.columns].to_dict().items())))
+            ] + list(self._pairer.frame_b.loc[idx_b].to_dict().items())))
         return pd.DataFrame.from_records(
             records,
             index=["pair_idx", "sim_score", "row_key"])
@@ -150,4 +140,4 @@ class ThresholdMatcher(object):
         num_pairs = len(pairs)
         print("for threshold %.3f:" % match_threshold)
         print("  %d matched pairs (%d%% of A, %d%% of B)" %
-              (num_pairs, num_pairs / self._dfa.shape[0] * 100, num_pairs / self._dfb.shape[0] * 100))
+              (num_pairs, num_pairs / self._pairer.frame_a.shape[0] * 100, num_pairs / self._pairer.frame_b.shape[0] * 100))

@@ -4,7 +4,7 @@ from pandas.testing import assert_frame_equal
 
 from .indices import NoopIndex
 from .matchers import ThresholdMatcher
-from .similarities import StringSimilarity
+from .similarities import JaroWinklerSimilarity, StringSimilarity
 
 
 class TestThresholdMatcher(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestThresholdMatcher(unittest.TestCase):
             columns=cols
         )
         matcher = ThresholdMatcher(
-            dfa, dfb, NoopIndex(), {"a": StringSimilarity()})
+            NoopIndex(), {"a": StringSimilarity()}, dfa, dfb)
 
         self.assertEqual(matcher._pairs, [(1.0, 0, 0)])
 
@@ -59,7 +59,7 @@ class TestThresholdMatcher(unittest.TestCase):
         with self.assertRaisesRegex(
                 ValueError,
                 "Dataframe index contains duplicates. Both frames need to have index free of duplicates."):
-            ThresholdMatcher(dfa, dfb, NoopIndex(), {"a": StringSimilarity()})
+            ThresholdMatcher(NoopIndex(), {"a": StringSimilarity()}, dfa, dfb)
 
     def test_ensure_same_columns(self):
         dfa = pd.DataFrame(
@@ -71,4 +71,26 @@ class TestThresholdMatcher(unittest.TestCase):
         with self.assertRaisesRegex(
                 ValueError,
                 "Dataframe columns are not equal."):
-            ThresholdMatcher(dfa, dfb, NoopIndex(), {"a": StringSimilarity()})
+            ThresholdMatcher(NoopIndex(), {"a": StringSimilarity()}, dfa, dfb)
+
+    def test_deduplicate(self):
+        cols = ['last', 'first']
+        df = pd.DataFrame([
+            ['beech', 'freddie'],
+            ['beech', 'freedie'],
+            ['dupas', 'demia'],
+            ['dupas', 'demeia'],
+            ['brown', 'latoya'],
+            ['bowen', 'latoya'],
+            ['rhea', 'cherri'],
+            ['rhea', 'cherrie']
+        ], columns=cols)
+
+        matcher = ThresholdMatcher(NoopIndex(), {
+            'last': JaroWinklerSimilarity(),
+            'first': JaroWinklerSimilarity()
+        }, df)
+
+        self.assertEqual(
+            matcher.get_index_pairs_within_thresholds(),
+            [(0, 1), (4, 5), (2, 3), (6, 7)])

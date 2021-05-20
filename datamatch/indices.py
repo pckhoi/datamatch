@@ -1,4 +1,17 @@
-class NoopIndex(object):
+from typing import Iterator
+
+import pandas as pd
+
+
+class BaseIndex(object):
+    def keys(self, df: pd.DataFrame) -> set:
+        raise NotImplementedError()
+
+    def bucket(self, df: pd.DataFrame, key: any) -> pd.DataFrame:
+        raise NotImplementedError()
+
+
+class NoopIndex(BaseIndex):
     """
     This pair every record with every other record. It's like not using an index.
     """
@@ -6,22 +19,16 @@ class NoopIndex(object):
     def __init__(self):
         pass
 
-    def index(self, dfa, dfb):
-        self._dfa = dfa
-        self._dfb = dfb
+    def keys(self, df: pd.DataFrame) -> set:
+        return set([0])
 
-    def __iter__(self):
-        self._done = False
-        return self
-
-    def __next__(self):
-        if self._done:
-            raise StopIteration()
-        self._done = True
-        return self._dfa, self._dfb
+    def bucket(self, df: pd.DataFrame, key: any) -> pd.DataFrame:
+        if key != 0:
+            raise KeyError(key)
+        return df
 
 
-class ColumnsIndex(object):
+class ColumnsIndex(BaseIndex):
     """
     This pair records with the same value in specified columns.
     """
@@ -29,22 +36,12 @@ class ColumnsIndex(object):
     def __init__(self, cols):
         self._cols = cols
 
-    def index(self, dfa, dfb):
-        self._dfa = dfa
-        self._dfb = dfb
+    def keys(self, df: pd.DataFrame) -> set:
+        return set(
+            df[self._cols].drop_duplicates().to_records(index=False).tolist()
+        )
 
-        set_a = set(
-            dfa[self._cols].drop_duplicates().to_records(index=False).tolist())
-        set_b = set(
-            dfb[self._cols].drop_duplicates().to_records(index=False).tolist())
-        self._keys = list(set_a.intersection(set_b))
-        self._len = len(self._keys)
-
-    def __iter__(self):
-        self._cur = 0
-        return self
-
-    def _bool_index(self, df, key):
+    def _bool_index(self, df: pd.DataFrame, key: any):
         result = None
         for ind, val in enumerate(key):
             if result is None:
@@ -53,15 +50,8 @@ class ColumnsIndex(object):
                 result = result & (df[self._cols[ind]] == val)
         return result
 
-    def __next__(self):
-        if self._cur >= self._len:
-            raise StopIteration()
-        key = self._keys[self._cur]
-        rows_a = self._dfa.loc[self._bool_index(self._dfa, key)]
-        rows_b = self._dfb.loc[self._bool_index(self._dfb, key)]
-        self._cur += 1
-        if len(rows_a.shape) == 1:
-            rows_a = rows_a.to_frame().transpose()
-        if len(rows_b.shape) == 1:
-            rows_b = rows_b.to_frame().transpose()
-        return rows_a, rows_b
+    def bucket(self, df: pd.DataFrame, key: any) -> pd.DataFrame:
+        rows = df.loc[self._bool_index(df, key)]
+        if len(rows.shape) == 1:
+            rows = rows.to_frame().transpose()
+        return rows
