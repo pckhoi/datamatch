@@ -43,3 +43,7 @@ matcher = ThresholdMatcher(ColumnsIndex(['year_of_birth']), {
     'last_name': JaroWinklerSimilarity()
 }, df)
 ```
+
+## Choosing a version
+
+As this package is at preproduction state, increase in minor version number represents breaking changes.
