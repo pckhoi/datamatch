@@ -1,10 +1,12 @@
 import unittest
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from .indices import NoopIndex
 from .matchers import ThresholdMatcher
 from .similarities import JaroWinklerSimilarity, StringSimilarity
+from .variators import Swap
 
 
 class TestThresholdMatcher(unittest.TestCase):
@@ -25,7 +27,8 @@ class TestThresholdMatcher(unittest.TestCase):
             columns=cols
         )
         matcher = ThresholdMatcher(
-            NoopIndex(), {"a": StringSimilarity()}, dfa, dfb)
+            NoopIndex(), {"a": StringSimilarity()}, dfa, dfb
+        )
 
         self.assertEqual(matcher._pairs, [(1.0, 0, 0)])
 
@@ -93,4 +96,26 @@ class TestThresholdMatcher(unittest.TestCase):
 
         self.assertEqual(
             matcher.get_index_pairs_within_thresholds(),
-            [(0, 1), (4, 5), (2, 3), (6, 7)])
+            [(0, 1), (4, 5), (2, 3), (6, 7)]
+        )
+
+    def test_swap_variator(self):
+        cols = ['last', 'first']
+        df = pd.DataFrame([
+            ['blake', 'lauri'],
+            ['lauri', 'blake'],
+            ['robinson', 'alexis'],
+            ['robertson', 'alexis'],
+            ['haynes', 'terry'],
+            ['terry', 'hayes']
+        ], columns=cols)
+
+        matcher = ThresholdMatcher(NoopIndex(), {
+            'last': JaroWinklerSimilarity(),
+            'first': JaroWinklerSimilarity()
+        }, df, variator=Swap('first', 'last'))
+
+        self.assertEqual(
+            matcher.get_index_pairs_within_thresholds(),
+            [(2, 3), (4, 5), (0, 1)]
+        )

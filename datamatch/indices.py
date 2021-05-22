@@ -5,7 +5,6 @@ import itertools
 from typing import Type
 
 import pandas as pd
-from pandas.core.reshape.concat import concat
 
 
 class BaseIndex(object):

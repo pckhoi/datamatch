@@ -1,3 +1,4 @@
+from datamatch.variators import Variator
 import itertools
 import math
 from bisect import bisect_left, bisect
@@ -17,19 +18,28 @@ class ThresholdMatcher(object):
     Final match results can be retrieved with a similarity threshold.
     """
 
-    def __init__(self, index: Type[BaseIndex], fields: dict, dfa: pd.DataFrame, dfb: pd.DataFrame or None = None) -> None:
+    def __init__(self, index: Type[BaseIndex], fields: dict, dfa: pd.DataFrame, dfb: pd.DataFrame or None = None, variator: Type[Variator] or None = None) -> None:
         """Creates new instance of ThresholdMatcher.
 
-        If it is given 2 dataframes at the end then it will try to match records between them.
-        If given only one dataframe then it attempt to detect duplicates in this dataframe.
+        If it is given 2 dataframes at the end then it will try to match records
+        between them. If given only one dataframe then it attempt to detect
+        duplicates in this dataframe.
 
         Args:
-            index (subclass of BaseIndex): how to index the data
-            fields (dict): mapping between field name and similarity class to use
-            dfa (pd.DataFrame): data to match. Its index must not contain duplicates.
-            dfb (pd.DataFrame): if this is set then match this with `dfa`, otherwise
-                deduplicate `dfa`. If given then its index must not contain
-                duplicates and its columns must match `dfa`'s.
+            index (subclass of BaseIndex):
+                how to index the data
+            fields (dict):
+                mapping between field name and similarity class to use
+            dfa (pd.DataFrame):
+                data to match. Its index must not contain duplicates.
+            dfb (pd.DataFrame):
+                if this is set then match this with `dfa`, otherwise deduplicate
+                `dfa`. If given then its index must not contain duplicates and
+                its columns must match `dfa`'s.
+            variator (subclass of Variator):
+                a variator produces variations from a single record. This is
+                useful when values are put in the wrong column e.g. when first
+                name and last name might be swapped.
 
         Returns:
             no value
@@ -39,6 +49,10 @@ class ThresholdMatcher(object):
         else:
             self._pairer = MatchPairer(dfa, dfb, index)
         self._fields = fields
+        if variator is None:
+            self._variator = Variator()
+        else:
+            self._variator = variator
         self._score_all_pairs()
 
     def _score_pair(self, ser_a, ser_b):
@@ -77,8 +91,14 @@ class ThresholdMatcher(object):
         Calculate similarity value for all pairs of records
         """
         pairs = []
-        for (idx_a, ser_a), (idx_b, ser_b) in self._pairer.pairs():
-            sim = self._score_pair(ser_a, ser_b)
+        for (idx_a, rec_a), (idx_b, rec_b) in self._pairer.pairs():
+            sim = max(
+                self._score_pair(ser_a, ser_b)
+                for ser_a, ser_b in itertools.product(
+                    self._variator.variations(rec_a),
+                    self._variator.variations(rec_b)
+                )
+            )
             pairs.append((sim, idx_a, idx_b))
         self._pairs = sorted(pairs, key=itemgetter(0))
         self._remove_lesser_matches()
