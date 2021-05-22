@@ -3,7 +3,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import itertools
 
-from .indices import NoopIndex, ColumnsIndex
+from .indices import MultiIndex, NoopIndex, ColumnsIndex
 
 
 class BaseIndexTestCase(unittest.TestCase):
@@ -49,7 +49,7 @@ class TestColumnsIndex(BaseIndexTestCase):
             pd.DataFrame([[3, 4]], index=["z"], columns=cols)
         )
 
-    def test_multi_index(self):
+    def test_multi_columns(self):
         cols = ["c", "d"]
         df = pd.DataFrame(
             [[1, 2], [2, 4], [3, 4]], index=["z", "x", "c"], columns=cols)
@@ -67,4 +67,58 @@ class TestColumnsIndex(BaseIndexTestCase):
         assert_frame_equal(
             idx.bucket(df, (3, 4)),
             pd.DataFrame([[3, 4]], index=["c"], columns=cols)
+        )
+
+
+class MultiIndexTestCase(BaseIndexTestCase):
+    def test_index(self):
+        cols = ["c", "d"]
+        df = pd.DataFrame(
+            [[1, 2], [2, 4], [3, 4]], index=["x", "y", "z"], columns=cols
+        )
+
+        idx = MultiIndex([
+            ColumnsIndex('c'),
+            ColumnsIndex('d')
+        ])
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([(1,), (2,), (3,), (4,)]))
+        assert_frame_equal(
+            idx.bucket(df, (1,)),
+            pd.DataFrame([[1, 2]], index=["x"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (2,)),
+            pd.DataFrame([[1, 2], [2, 4]], index=["x", "y"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (3,)),
+            pd.DataFrame([[3, 4]], index=["z"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, (4,)),
+            pd.DataFrame([[2, 4], [3, 4]], index=["y", "z"], columns=cols)
+        )
+
+        idx = MultiIndex([
+            ColumnsIndex('c'),
+            ColumnsIndex('d')
+        ], combine_keys=True)
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([
+            ((3,), (4,)),
+            ((2,), (4,)),
+            ((1,), (2,)),
+        ]))
+        assert_frame_equal(
+            idx.bucket(df, ((1,), (2,))),
+            pd.DataFrame([[1, 2]], index=["x"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, ((2,), (4,))),
+            pd.DataFrame([[2, 4]], index=["y"], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, ((3,), (4,))),
+            pd.DataFrame([[3, 4]], index=["z"], columns=cols)
         )
