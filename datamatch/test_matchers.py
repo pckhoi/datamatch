@@ -1,3 +1,4 @@
+from datamatch.filters import DissimilarFilter, NonOverlappingFilter
 import unittest
 
 import pandas as pd
@@ -118,4 +119,27 @@ class TestThresholdMatcher(unittest.TestCase):
         self.assertEqual(
             matcher.get_index_pairs_within_thresholds(),
             [(2, 3), (4, 5), (0, 1)]
+        )
+
+    def test_filters(self):
+        cols = ['uid', 'first', 'agency', 'start', 'end']
+        df = pd.DataFrame([
+            ['1', 'john', 'slidell pd', 0, 10],
+            ['2', 'john', 'slidell pd', 10, 20],
+            ['3', 'john', 'slidell pd', 20, 30],
+            ['4', 'john', 'gretna pd', 11, 21],
+            ['5', 'john', 'gretna pd', 0, 7],
+            ['6', 'john', 'gretna pd', 10, 18],
+        ], columns=cols)
+
+        matcher = ThresholdMatcher(NoopIndex(), {
+            'first': JaroWinklerSimilarity()
+        }, df, filters=[
+            DissimilarFilter('agency'),
+            NonOverlappingFilter('start', 'end')
+        ])
+
+        self.assertEqual(
+            matcher.get_index_pairs_within_thresholds(),
+            [(0, 3), (1, 4), (2, 5)]
         )

@@ -10,6 +10,11 @@ import numpy as np
 
 from .indices import BaseIndex
 from .pairers import DeduplicatePairer, MatchPairer
+from .filters import BaseFilter
+
+
+class ContinueOuter(Exception):
+    pass
 
 
 class ThresholdMatcher(object):
@@ -18,7 +23,15 @@ class ThresholdMatcher(object):
     Final match results can be retrieved with a similarity threshold.
     """
 
-    def __init__(self, index: Type[BaseIndex], fields: dict, dfa: pd.DataFrame, dfb: pd.DataFrame or None = None, variator: Type[Variator] or None = None) -> None:
+    def __init__(
+        self,
+        index: Type[BaseIndex],
+        fields: dict,
+        dfa: pd.DataFrame,
+        dfb: pd.DataFrame or None = None,
+        variator: Type[Variator] or None = None,
+        filters: list[Type[BaseFilter]] = [],
+    ) -> None:
         """Creates new instance of ThresholdMatcher.
 
         If it is given 2 dataframes at the end then it will try to match records
@@ -40,6 +53,8 @@ class ThresholdMatcher(object):
                 a variator produces variations from a single record. This is
                 useful when values are put in the wrong column e.g. when first
                 name and last name might be swapped.
+            filters (list of subclass of BaseFilter):
+                list of filters to eliminate pairs from matching process
 
         Returns:
             no value
@@ -53,6 +68,7 @@ class ThresholdMatcher(object):
             self._variator = Variator()
         else:
             self._variator = variator
+        self._filters = filters
         self._score_all_pairs()
 
     def _score_pair(self, ser_a, ser_b):
@@ -92,6 +108,13 @@ class ThresholdMatcher(object):
         """
         pairs = []
         for (idx_a, rec_a), (idx_b, rec_b) in self._pairer.pairs():
+            try:
+                for f in self._filters:
+                    if not f.valid(rec_a, rec_b):
+                        raise ContinueOuter
+            except ContinueOuter:
+                continue
+
             sim = max(
                 self._score_pair(ser_a, ser_b)
                 for ser_a, ser_b in itertools.product(

@@ -102,11 +102,6 @@ class ColumnsIndex(BaseIndex):
     def _key_ind_map(self, df: pd.DataFrame) -> dict:
         result = dict()
         for idx, row in df.iterrows():
-            # key = hashlib.md5(
-            #     ', '.join(
-            #         [str(row[col]) for col in self._cols]
-            #     ).encode('utf-8')
-            # ).hexdigest()
             key = tuple(
                 row[col] for col in self._cols
             )
