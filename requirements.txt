@@ -2,3 +2,4 @@ numpy==1.18
 pandas==1.2
 python-Levenshtein==0.12
 Unidecode==1.1
+tqdm==4.61.1

@@ -3,10 +3,11 @@ import itertools
 import math
 from bisect import bisect_left, bisect
 from operator import itemgetter
-from typing import Type
+from typing import Iterator, Type
 
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 from .indices import BaseIndex
 from .pairers import DeduplicatePairer, MatchPairer
@@ -31,6 +32,7 @@ class ThresholdMatcher(object):
         dfb: pd.DataFrame or None = None,
         variator: Type[Variator] or None = None,
         filters: list[Type[BaseFilter]] = [],
+        show_progress: bool = False
     ) -> None:
         """Creates new instance of ThresholdMatcher.
 
@@ -55,6 +57,8 @@ class ThresholdMatcher(object):
                 name and last name might be swapped.
             filters (list of subclass of BaseFilter):
                 list of filters to eliminate pairs from matching process
+            show_progress (bool):
+                show tqdm progress bar
 
         Returns:
             no value
@@ -69,6 +73,7 @@ class ThresholdMatcher(object):
         else:
             self._variator = variator
         self._filters = filters
+        self._show_progress = show_progress
         self._score_all_pairs()
 
     def _score_pair(self, ser_a, ser_b):
@@ -102,11 +107,7 @@ class ThresholdMatcher(object):
         self._pairs = [self._pairs[i] for i in keep]
         self._pairs.reverse()
 
-    def _score_all_pairs(self):
-        """
-        Calculate similarity value for all pairs of records
-        """
-        pairs = []
+    def _valid_pairs(self) -> Iterator:
         for (idx_a, rec_a), (idx_b, rec_b) in self._pairer.pairs():
             try:
                 for f in self._filters:
@@ -114,7 +115,17 @@ class ThresholdMatcher(object):
                         raise ContinueOuter
             except ContinueOuter:
                 continue
+            yield (idx_a, rec_a), (idx_b, rec_b)
 
+    def _score_all_pairs(self):
+        """
+        Calculate similarity value for all pairs of records
+        """
+        pairs = []
+        valid_pairs = self._valid_pairs()
+        if self._show_progress:
+            valid_pairs = tqdm(valid_pairs, desc='scoring pairs')
+        for (idx_a, rec_a), (idx_b, rec_b) in valid_pairs:
             sim = max(
                 self._score_pair(ser_a, ser_b)
                 for ser_a, ser_b in itertools.product(
