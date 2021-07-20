@@ -18,11 +18,17 @@ class ContinueOuter(Exception):
     pass
 
 
+MODE_MATCH = 1
+MODE_DEDUP = 2
+
+
 class ThresholdMatcher(object):
     """Matchs records by computing similarity score.
 
     Final match results can be retrieved with a similarity threshold.
     """
+
+    _mode: int
 
     def __init__(
         self,
@@ -65,8 +71,10 @@ class ThresholdMatcher(object):
         """
         if dfb is None:
             self._pairer = DeduplicatePairer(dfa, index)
+            self._mode = MODE_DEDUP
         else:
             self._pairer = MatchPairer(dfa, dfb, index)
+            self._mode = MODE_MATCH
         self._fields = fields
         if variator is None:
             self._variator = Variator()
@@ -135,8 +143,65 @@ class ThresholdMatcher(object):
             )
             pairs.append((sim, idx_a, idx_b))
         self._pairs = sorted(pairs, key=itemgetter(0))
-        self._remove_lesser_matches()
-        self._keys = [t[0] for t in self._pairs]
+        # in dedup mode we can group more than 2 records therefore we're not dropping lesser matches
+        if self._mode == MODE_MATCH:
+            self._remove_lesser_matches()
+        self._scores = [t[0] for t in self._pairs]
+
+    def _get_clusters_dict_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> dict[set, set]:
+        pairs = self._pairs[
+            bisect_left(self._scores, lower_bound):
+            bisect(self._scores, upper_bound)]
+        pairs.reverse()
+        clusters: dict[frozenset, set] = {}
+
+        for sim, idx_a, idx_b in pairs:
+            cluster_keys: list[set] = []
+            for key in clusters:
+                if idx_a in key or idx_b in key:
+                    cluster_keys.append(key)
+            new_key = set()
+            new_val = set()
+            for key in cluster_keys:
+                new_key = new_key.union(key)
+                new_val = new_val.union(clusters[key])
+                clusters.pop(key, None)
+
+            new_key.add(idx_a)
+            new_key.add(idx_b)
+            new_val.add((sim, idx_a, idx_b))
+            clusters.__setitem__(frozenset(new_key), new_val)
+
+        return clusters
+
+    def get_index_clusters_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list[set]:
+        return [
+            idx_set for idx_set in
+            self._get_clusters_dict_within_thresholds(lower_bound, upper_bound)
+        ]
+
+    def get_clusters_within_threshold(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
+        records = []
+        clusters = sorted([
+            sorted(pairs_set, key=lambda x: x[0], reverse=True)
+            for pairs_set in self._get_clusters_dict_within_thresholds(
+                lower_bound, upper_bound
+            ).values()
+        ], key=lambda x: x[0][0], reverse=True)
+        for cluster_idx, cluster in enumerate(clusters):
+            for pair_idx, pair in enumerate(cluster):
+                sim_score, idx_a, idx_b = pair
+                records.append(dict([
+                    ("cluster_idx", cluster_idx), ("pair_idx", pair_idx),
+                    ("sim_score", sim_score), ("row_key", idx_a)
+                ] + list(self._pairer.frame_a.loc[idx_a].to_dict().items())))
+                records.append(dict([
+                    ("cluster_idx", cluster_idx), ("pair_idx", pair_idx),
+                    ("sim_score", sim_score), ("row_key", idx_b)
+                ] + list(self._pairer.frame_b.loc[idx_b].to_dict().items())))
+        return pd.DataFrame.from_records(
+            records,
+            index=["cluster_idx", "pair_idx", "sim_score", "row_key"])
 
     def get_index_pairs_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list:
         """Returns index pairs with similarity score within specified thresholds
@@ -149,8 +214,8 @@ class ThresholdMatcher(object):
             list of tuples of index of matching records
         """
         return [t[1:] for t in self._pairs[
-            bisect_left(self._keys, lower_bound):
-            bisect(self._keys, upper_bound)]]
+            bisect_left(self._scores, lower_bound):
+            bisect(self._scores, upper_bound)]]
 
     def get_sample_pairs(self, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05) -> pd.DataFrame:
         """Returns samples of record pairs for each range of similarity score
@@ -171,8 +236,8 @@ class ThresholdMatcher(object):
             lower_val = ranges[i+1]
             score_range = "%.2f-%.2f" % (upper_val, lower_val)
             pairs = self._pairs[
-                bisect(self._keys, lower_val):
-                bisect(self._keys, upper_val)
+                bisect(self._scores, lower_val):
+                bisect(self._scores, upper_val)
             ][:sample_counts]
             pairs.reverse()
             for pair_idx, pair in enumerate(pairs):
@@ -201,8 +266,8 @@ class ThresholdMatcher(object):
         """
         records = []
         pairs = reversed(self._pairs[
-            bisect_left(self._keys, lower_bound):
-            bisect(self._keys, upper_bound)])
+            bisect_left(self._scores, lower_bound):
+            bisect(self._scores, upper_bound)])
         for pair_idx, pair in enumerate(pairs):
             sim_score, idx_a, idx_b = pair
             records.append(dict([
@@ -245,7 +310,7 @@ class ThresholdMatcher(object):
         pairs = self.get_all_pairs(lower_bound, 1)
         dec = {
             "match_threshold": match_threshold,
-            "number_of_matched_pairs": len(self._keys) - bisect_left(self._keys, match_threshold)
+            "number_of_matched_pairs": len(self._scores) - bisect_left(self._scores, match_threshold)
         }
         dec_tups = list(itertools.zip_longest(*dec.items()))
         dec_sr = pd.Series(list(dec_tups[1]), index=list(dec_tups[0]))

@@ -87,7 +87,9 @@ class TestThresholdMatcher(unittest.TestCase):
             ['brown', 'latoya'],
             ['bowen', 'latoya'],
             ['rhea', 'cherri'],
-            ['rhea', 'cherrie']
+            ['rhea', 'cherrie'],
+            ['b', 'freedie'],
+            ['du', 'demeia'],
         ], columns=cols)
 
         matcher = ThresholdMatcher(NoopIndex(), {
@@ -96,8 +98,37 @@ class TestThresholdMatcher(unittest.TestCase):
         }, df)
 
         self.assertEqual(
-            matcher.get_index_pairs_within_thresholds(),
-            [(0, 1), (4, 5), (2, 3), (6, 7)]
+            matcher.get_index_clusters_within_thresholds(),
+            [
+                frozenset({6, 7}), frozenset({4, 5}),
+                frozenset({2, 3, 9}), frozenset({0, 1, 8}),
+            ],
+        )
+
+        self.maxDiff = None
+        print(matcher.get_clusters_within_threshold())
+        self.assertEqual(
+            matcher.get_clusters_within_threshold().to_string(),
+            '\n'.join([
+                '                                         last    first',
+                'cluster_idx pair_idx sim_score row_key                ',
+                '0           0        0.990522  6         rhea   cherri',
+                '                               7         rhea  cherrie',
+                '1           0        0.980748  2        dupas    demia',
+                '                               3        dupas   demeia',
+                '            1        0.923472  3        dupas   demeia',
+                '                               9           du   demeia',
+                '            2        0.902589  2        dupas    demia',
+                '                               9           du   demeia',
+                '2           0        0.941913  4        brown   latoya',
+                '                               5        bowen   latoya',
+                '3           0        0.939581  0        beech  freddie',
+                '                               1        beech  freedie',
+                '            1        0.888144  1        beech  freedie',
+                '                               8            b  freedie',
+                '            2        0.819520  0        beech  freddie',
+                '                               8            b  freedie',
+            ]),
         )
 
     def test_swap_variator(self):
@@ -141,5 +172,5 @@ class TestThresholdMatcher(unittest.TestCase):
 
         self.assertEqual(
             matcher.get_index_pairs_within_thresholds(),
-            [(0, 3), (1, 4), (2, 5)]
+            [(0, 3), (1, 4), (2, 4), (2, 5)]
         )
