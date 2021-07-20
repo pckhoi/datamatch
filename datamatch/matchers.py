@@ -148,7 +148,7 @@ class ThresholdMatcher(object):
             self._remove_lesser_matches()
         self._scores = [t[0] for t in self._pairs]
 
-    def _get_clusters_dict_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> dict[set, set]:
+    def _get_clusters_dict_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> dict[frozenset, set]:
         pairs = self._pairs[
             bisect_left(self._scores, lower_bound):
             bisect(self._scores, upper_bound)]
@@ -175,12 +175,30 @@ class ThresholdMatcher(object):
         return clusters
 
     def get_index_clusters_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list[set]:
+        """Returns index clusters with similarity score within specified thresholds
+
+        Args:
+            lower_bound (float): pairs that score lower than this won't be returned
+            upper_bound (float): pairs that score higher than this won't be returned
+
+        Returns:
+            list of clusters, each cluster is a set of indices.
+        """
         return [
             idx_set for idx_set in
             self._get_clusters_dict_within_thresholds(lower_bound, upper_bound)
         ]
 
     def get_clusters_within_threshold(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
+        """Returns all clusters between a lower bound and upper bound
+
+        Args:
+            lower_bound (float): pairs that score lower than this won't be returned
+            upper_bound (float): pairs that score higher than this won't be returned
+
+        Returns:
+            a multi-indexed dataframe that contains all matched clusters
+        """
         records = []
         clusters = sorted([
             sorted(pairs_set, key=lambda x: x[0], reverse=True)
@@ -305,19 +323,53 @@ class ThresholdMatcher(object):
         Returns:
             no value
         """
-        samples = self.get_sample_pairs(
-            sample_counts, lower_bound, 1, step)
-        pairs = self.get_all_pairs(lower_bound, 1)
+        with pd.ExcelWriter(name) as writer:
+            self.get_sample_pairs(
+                sample_counts, lower_bound, 1, step
+            ).to_excel(writer, sheet_name='Sample pairs')
+            self.get_all_pairs(
+                lower_bound, 1
+            ).to_excel(writer, sheet_name='All pairs')
+            self._decision_series(
+                match_threshold
+            ).to_excel(writer, sheet_name="Decision")
+
+    def _decision_series(self, match_threshold: float) -> pd.Series:
         dec = {
             "match_threshold": match_threshold,
             "number_of_matched_pairs": len(self._scores) - bisect_left(self._scores, match_threshold)
         }
         dec_tups = list(itertools.zip_longest(*dec.items()))
-        dec_sr = pd.Series(list(dec_tups[1]), index=list(dec_tups[0]))
+        return pd.Series(list(dec_tups[1]), index=list(dec_tups[0]))
+
+    def save_clusters_to_excel(self, name: str, match_threshold: float, lower_bound: float = 0.7) -> None:
+        """Save matched clusters to an Excel file.
+
+        This will create an Excel file with 3 sheets:
+        - All clusters: all clusters that score higher than lower bound
+            ordered by score
+        - Decision: selected threshold and how many pairs are counted
+            as matched
+
+        Args:
+            name (string):
+                excel file to save to
+            match_threshold (float):
+                the score above which a pair is considered matched
+            lower_bound (float):
+                pairs score lower than this will be eliminated from
+                "All clusters" sheet.
+
+        Returns:
+            no value
+        """
         with pd.ExcelWriter(name) as writer:
-            samples.to_excel(writer, sheet_name='Sample pairs')
-            pairs.to_excel(writer, sheet_name='All pairs')
-            dec_sr.to_excel(writer, sheet_name="Decision")
+            self.get_clusters_within_threshold(
+                lower_bound
+            ).to_excel(writer, sheet_name='All clusters')
+            self._decision_series(
+                match_threshold
+            ).to_excel(writer, sheet_name="Decision")
 
     def print_decision(self, match_threshold: float):
         """Print number and percentage of matched pairs for selected threshold
