@@ -1,9 +1,9 @@
-from datamatch.variators import Variator
+import operator
+import functools
 import itertools
 import math
 from bisect import bisect_left, bisect
-from operator import itemgetter
-from typing import Iterator, Type
+from typing import Any, Iterator, Type
 
 import pandas as pd
 import numpy as np
@@ -12,6 +12,7 @@ from tqdm import tqdm
 from .indices import BaseIndex
 from .pairers import DeduplicatePairer, MatchPairer
 from .filters import BaseFilter
+from .variators import Variator
 
 
 class ContinueOuter(Exception):
@@ -142,11 +143,51 @@ class ThresholdMatcher(object):
                 )
             )
             pairs.append((sim, idx_a, idx_b))
-        self._pairs = sorted(pairs, key=itemgetter(0))
+        self._pairs = sorted(pairs, key=operator.itemgetter(0))
         # in dedup mode we can group more than 2 records therefore we're not dropping lesser matches
         if self._mode == MODE_MATCH:
             self._remove_lesser_matches()
         self._scores = [t[0] for t in self._pairs]
+
+    def _split_clusters(self, orig_cluster: set[tuple[float, Any, Any]]) -> list[tuple[frozenset, set]]:
+        paths: dict[Any, set] = {}
+        pairs: dict[frozenset, tuple[float, Any, Any]] = {}
+        nodes = set()
+        for sim, idx_a, idx_b in orig_cluster:
+            paths.setdefault(idx_a, set()).add(idx_b)
+            paths.setdefault(idx_b, set()).add(idx_a)
+            nodes.add(idx_a)
+            nodes.add(idx_b)
+            pairs[frozenset([idx_a, idx_b])] = (sim, idx_a, idx_b)
+        clusters: list[set] = []
+        clustered = set()
+        for node in nodes:
+            if node in clustered:
+                continue
+            cluster = set([node])
+            clustered.add(node)
+            queue = [node]
+            # BFS to find all members of cluster
+            while len(queue) > 0:
+                cur = queue.pop()
+                for neighbor in paths[cur]:
+                    if neighbor in clustered:
+                        continue
+                    if all([n in paths[neighbor] for n in cluster]):
+                        clustered.add(neighbor)
+                        cluster.add(neighbor)
+                        queue.append(neighbor)
+            clusters.append(cluster)
+        return [
+            (
+                frozenset(s),
+                set([
+                    pairs[frozenset(y)]
+                    for y in itertools.combinations(s, 2)
+                ])
+            )
+            for s in clusters if len(s) > 1
+        ]
 
     def _get_clusters_dict_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> dict[frozenset, set]:
         pairs = self._pairs[
@@ -172,9 +213,11 @@ class ThresholdMatcher(object):
             new_val.add((sim, idx_a, idx_b))
             clusters.__setitem__(frozenset(new_key), new_val)
 
-        return clusters
+        return dict(functools.reduce(operator.add, [
+            self._split_clusters(cluster) for cluster in clusters.values()
+        ]))
 
-    def get_index_clusters_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list[set]:
+    def get_index_clusters_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list[frozenset]:
         """Returns index clusters with similarity score within specified thresholds
 
         Args:

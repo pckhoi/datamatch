@@ -88,8 +88,12 @@ class TestThresholdMatcher(unittest.TestCase):
             ['bowen', 'latoya'],
             ['rhea', 'cherri'],
             ['rhea', 'cherrie'],
-            ['b', 'freedie'],
+            ['be', 'freedie'],
             ['du', 'demeia'],
+            ['teneisha', 'green'],
+            ['tyler', 'green'],
+            ['te neisha', 'green'],
+            ['t', 'green'],
         ], columns=cols)
 
         matcher = ThresholdMatcher(NoopIndex(), {
@@ -98,36 +102,44 @@ class TestThresholdMatcher(unittest.TestCase):
         }, df)
 
         self.assertEqual(
-            matcher.get_index_clusters_within_thresholds(),
+            matcher.get_index_clusters_within_thresholds(0.83),
             [
-                frozenset({6, 7}), frozenset({4, 5}),
-                frozenset({2, 3, 9}), frozenset({0, 1, 8}),
+                frozenset({6, 7}),
+                frozenset({4, 5}),
+                frozenset({2, 3, 9}),
+                frozenset({10, 12, 13}),
+                frozenset({0, 8, 1}),
             ],
         )
 
         self.maxDiff = None
-        print(matcher.get_clusters_within_threshold())
         self.assertEqual(
-            matcher.get_clusters_within_threshold().to_string(),
+            matcher.get_clusters_within_threshold(0.83).to_string(),
             '\n'.join([
-                '                                         last    first',
-                'cluster_idx pair_idx sim_score row_key                ',
-                '0           0        0.990522  6         rhea   cherri',
-                '                               7         rhea  cherrie',
-                '1           0        0.980748  2        dupas    demia',
-                '                               3        dupas   demeia',
-                '            1        0.923472  3        dupas   demeia',
-                '                               9           du   demeia',
-                '            2        0.902589  2        dupas    demia',
-                '                               9           du   demeia',
-                '2           0        0.941913  4        brown   latoya',
-                '                               5        bowen   latoya',
-                '3           0        0.939581  0        beech  freddie',
-                '                               1        beech  freedie',
-                '            1        0.888144  1        beech  freedie',
-                '                               8            b  freedie',
-                '            2        0.819520  0        beech  freddie',
-                '                               8            b  freedie',
+                '                                             last    first',
+                'cluster_idx pair_idx sim_score row_key                    ',
+                '0           0        0.990522  6             rhea   cherri',
+                '                               7             rhea  cherrie',
+                '1           0        0.985297  10        teneisha    green',
+                '                               12       te neisha    green',
+                '            1        0.878609  10        teneisha    green',
+                '                               13               t    green',
+                '            2        0.876863  12       te neisha    green',
+                '                               13               t    green',
+                '2           0        0.980748  2            dupas    demia',
+                '                               3            dupas   demeia',
+                '            1        0.923472  3            dupas   demeia',
+                '                               9               du   demeia',
+                '            2        0.902589  2            dupas    demia',
+                '                               9               du   demeia',
+                '3           0        0.941913  4            brown   latoya',
+                '                               5            bowen   latoya',
+                '4           0        0.939581  0            beech  freddie',
+                '                               1            beech  freedie',
+                '            1        0.923472  1            beech  freedie',
+                '                               8               be  freedie',
+                '            2        0.857679  0            beech  freddie',
+                '                               8               be  freedie',
             ]),
         )
 
