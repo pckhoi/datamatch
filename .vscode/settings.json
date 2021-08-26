@@ -1,13 +1,7 @@
 {
-    "python.pythonPath": "/Users/khoipham/.virtualenvs/base/bin/python",
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        ".",
-        "-p",
-        "test_*.py"
-    ],
-    "python.testing.pytestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true
+  "python.testing.unittestArgs": ["-v", "-s", ".", "-p", "test_*.py"],
+  "python.testing.pytestEnabled": false,
+  "python.testing.nosetestsEnabled": false,
+  "python.testing.unittestEnabled": true,
+  "restructuredtext.confPath": "${workspaceFolder}/doc"
 }

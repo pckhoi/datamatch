@@ -1,3 +1,13 @@
+"""
+A pairer produces pairs of records for matching. There are 2 main strategies:
+
+- Produce matching pairs from 2 datasets, each pair contains a record from 1 dataset and a record
+from the other dataset. This is useful when combining records from 2 datasets.
+
+- Produce matching pairs from 1 dataset, all records in each pair come from a single dataset. This
+is useful in deduplication tasks.
+"""
+
 import itertools
 from typing import Iterator, Type
 

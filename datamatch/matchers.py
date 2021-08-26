@@ -1,3 +1,10 @@
+"""
+A matcher matches records from 2 datasets (deduplicate if it is only given 1 dataset). It is also the main entry for this
+library. Through its constructor you can configure which index to use, which and how each column should be compared, etc...
+
+For now the only matcher is :class:`ThresholdMatcher`.
+"""
+
 import operator
 import functools
 import itertools
@@ -24,9 +31,10 @@ MODE_DEDUP = 2
 
 
 class ThresholdMatcher(object):
-    """Matchs records by computing similarity score.
+    """Matchs records by computing similarity score for each pair and discard those that fall below a threshold.
 
-    Final match results can be retrieved with a similarity threshold.
+    This matcher does not require any training data and is perfect for when there are not too much data or if
+    training data is not available.
     """
 
     _mode: int
@@ -41,11 +49,27 @@ class ThresholdMatcher(object):
         filters: list[Type[BaseFilter]] = [],
         show_progress: bool = False
     ) -> None:
-        """Creates new instance of ThresholdMatcher.
+        """
+        If it is given 2 dataframes then it will try to match records
+        between them. If given only one dataframe then it attempts to detect
+        duplicates instead.
 
-        If it is given 2 dataframes at the end then it will try to match records
-        between them. If given only one dataframe then it attempt to detect
-        duplicates in this dataframe.
+        :param index: how to index the data
+        :type index: sub-class of :class:`BaseIndex`
+
+        :param fields: mapping between field name and similarity class to use
+        :type fields: :obj:`dict` of similarity classes
+
+        :param dfa: the left dataset to match. Its index must not contain duplicates.
+        :type dfa: :class:`pandas:pandas.DataFrame`
+
+        :param dfb: the right dataset to match. Its index must not contain duplicates and
+            its column must match **dfa**'s. If this is not given then the matcher will
+            attempt to deduplicate **dfa** instead.
+        :type dfb: :class:`pandas:pandas.DataFrame`
+
+        :param variator: 
+
 
         Args:
             index (subclass of BaseIndex):
@@ -389,10 +413,8 @@ class ThresholdMatcher(object):
         """Save matched clusters to an Excel file.
 
         This will create an Excel file with 3 sheets:
-        - All clusters: all clusters that score higher than lower bound
-            ordered by score
-        - Decision: selected threshold and how many pairs are counted
-            as matched
+        - All clusters: all clusters that score higher than lower bound ordered by score
+        - Decision: selected threshold and how many pairs are counted as matched
 
         Args:
             name (string):
@@ -400,8 +422,7 @@ class ThresholdMatcher(object):
             match_threshold (float):
                 the score above which a pair is considered matched
             lower_bound (float):
-                pairs score lower than this will be eliminated from
-                "All clusters" sheet.
+                pairs score lower than this will be eliminated from "All clusters" sheet.
 
         Returns:
             no value

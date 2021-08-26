@@ -1,24 +1,31 @@
+"""
+A filter discards pairs from the matching process. It does the opposite of an index which dictates which pair can be compared.
+They are both employed to increase matching performance. 
+"""
+
+from abc import ABC, abstractmethod
+
 import pandas as pd
 
 
-class BaseFilter(object):
-    """Base class of all filter classes
+class BaseFilter(ABC):
+    """Base class of all filter classes.
 
-    A filter eliminates pairs out of matching process. It is similar
-    to an index in that they are both employed to reduce matching
-    time but whereas an index white-lists what records can be matched,
-    a filter acts like a black-listing mechanism.
+    Sub-class should implement the :meth:`valid` method.
     """
 
+    @abstractmethod
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
-        """Returns whether a pair of record is valid (should be matched).
+        """Returns true if a pair of records is valid (can be matched).
 
-        Args:
-            a (Series): left record
-            b (Series): right record
+        :param a: the left record
+        :type a: :class:`pandas:pandas.Series`
 
-        Returns:
-            whether this pair of records should be matched
+        :param b: the right record
+        :type b: :class:`pandas:pandas.Series`
+
+        :return: whether these 2 records can be matched
+        :rtype: :obj:`bool`
         """
         raise NotImplementedError()
 
@@ -27,48 +34,49 @@ class DissimilarFilter(BaseFilter):
     """Eliminates pairs with the same value for a specific field.
     """
 
-    def __init__(self, field: str) -> None:
-        """Creates a new instance of DissimilarFilter
-
-        Args:
-            field (str):
-                name of field to check
-
-        Returns:
-            no value
+    def __init__(self, col: str) -> None:
+        """
+        :param col: the column to check
+        :type col: :obj:`str`
         """
         super().__init__()
-        self._field = field
+        self._col = col
 
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
-        val_a = a[self._field]
-        val_b = b[self._field]
+        """
+        :meta private:
+        """
+        val_a = a[self._col]
+        val_b = b[self._col]
         if pd.isnull(val_a) or pd.isnull(val_b):
             return True
         return val_a != val_b
 
 
 class NonOverlappingFilter(BaseFilter):
-    """Eliminates pairs with overlapping number range.
+    """Eliminates pairs with overlapping ranges.
+
+    This is usually used over time ranges, which ensures time exclusivity of a record.
     """
 
     def __init__(self, start: str, end: str) -> None:
-        """Creates a new instance of NonOverlappingFilter
+        """
+        Both start and end columns must be of the same type and must be comparable.
 
-        Args:
-            start (str):
-                field that contain start value of range. It must never
-                contain NA value.
-            end (str):
-                field that contain end value of range. It must never
-                contain NA value.
+        e.g. `df[end] < df[start]` should produce a boolean series.
 
-        Returns:
-            no value  
+        :param start: the range start column
+        :type start: :obj:`str`
+
+        :param end: the range end column
+        :type end: :obj:`str`
         """
         super().__init__()
         self._start = start
         self._end = end
 
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
+        """
+        :meta private:
+        """
         return a[self._end] < b[self._start] or a[self._start] > b[self._end]
