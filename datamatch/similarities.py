@@ -12,7 +12,7 @@ from unidecode import unidecode
 
 
 class StringSimilarity(object):
-    """Computes a similarity score between 2 strings using Levenshtein distance"""
+    """Computes similarity score between 2 strings using Levenshtein distance"""
 
     def sim(self, a: str, b: str):
         """Returns a similarity score
@@ -58,12 +58,87 @@ class JaroWinklerSimilarity(object):
         return jaro_winkler(unidecode(a), unidecode(b), self._prefix_weight)
 
 
+class AbsoluteNumericalSimilarity(object):
+    """Computes similarity score between two numbers, extrapolated from a maximum absolute difference
+
+    Maximum absolute difference **d_max** (greater than 0) is the maximum tolerated difference
+    between two numbers regardless of their actual values. If the difference between the two values
+    are less than **d_max** then the similarity score between two values `a` and `b` is
+    ``1.0 - abs(a - b) / d_max``. Otherwise the score is 0.
+    """
+
+    def __init__(self, d_max: float) -> None:
+        """
+        :param d_max: The maximum absolute difference
+        :type d_max: :obj:`float`
+        """
+        self._d_max = d_max
+
+    def sim(self, a: float or int, b: float or int) -> float:
+        """Returns a similarity score
+
+        :param a: The left number
+        :type a: :obj:`float` or :obj:`int`
+
+        :param b: The right number
+        :type b: :obj:`float` or :obj:`int`
+
+        :return: The similarity score
+        :rtype: :obj:`float`
+        """
+        d = abs(a - b)
+        if d < self._d_max:
+            return 1 - d / self._d_max
+        return 0
+
+
+class RelativeNumericalSimilarity(object):
+    """Computes similarity score between two numbers, extrapolated from a maximum percentage difference
+
+    This class serves similar purpose to :class:`AbsoluteNumericalSimilarity` but is more dependent on
+    the actual values being compared.
+
+    Percentage difference `pc` between two values `a` and `b` is defined as
+    ``abs(a - b) / max(abs(a), abs(b)) * 100``.
+
+    Maximum percentage difference **pc_max** (0 < pc_max < 100) is the maximum tolerated percentage
+    difference between the two numbers. If the percentage difference `pc` is less than **pc_max** then
+    the similarity score is calculated with ``1.0 - pc / pc_max``. Otherwise the score is 0.
+    """
+
+    def __init__(self, pc_max: int) -> None:
+        """
+        :param pc_max: The maximum percentage difference
+        :type pc_max: :obj:`int`
+        """
+        self._pc_max = pc_max
+
+    def sim(self, a: float or int, b: float or int) -> float:
+        """Returns a similarity score
+
+        :param a: The left number
+        :type a: :obj:`float` or :obj:`int`
+
+        :param b: The right number
+        :type b: :obj:`float` or :obj:`int`
+
+        :return: The similarity score
+        :rtype: :obj:`float`
+        """
+        d = abs(a - b)
+        pc = d / max(abs(a), abs(b)) * 100
+        if pc < self._pc_max:
+            return 1 - pc / self._pc_max
+        return 0
+
+
 class DateSimilarity(object):
     """Computes similarity score between 2 dates
 
     This is how similarity score is computed:
 
-    - If both dates are less than **days_max_diff** days apart then the similarity score is ``1 - <difference in days> / days_max_diff``, otherwise
+    - | If both dates are less than **days_max_diff** days apart then the similarity score is
+      | ``1 - <difference in days> / days_max_diff``, otherwise
 
     - If the year digits are the same but the month and day digits are swapped, then the similarity score is 0.5.
 

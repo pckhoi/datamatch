@@ -1,7 +1,9 @@
 import unittest
 from datetime import date
 
-from .similarities import StringSimilarity, DateSimilarity, JaroWinklerSimilarity
+from .similarities import (
+    StringSimilarity, DateSimilarity, JaroWinklerSimilarity, AbsoluteNumericalSimilarity, RelativeNumericalSimilarity
+)
 
 
 class TestStringSimilarity(unittest.TestCase):
@@ -36,3 +38,25 @@ class TestDateSimilarity(unittest.TestCase):
         self.assertEqual(obj.sim(date(2000, 9, 11), date(2000, 11, 9)), 0.5)
         # same year and day but month is different
         self.assertEqual(obj.sim(date(2000, 3, 20), date(2000, 8, 20)), 0.875)
+
+
+class TestAbsoluteNumericalSimilarity(unittest.TestCase):
+    def test_sim(self):
+        obj = AbsoluteNumericalSimilarity(10)
+        self.assertEqual(obj.sim(10, 10), 1)
+        self.assertEqual(obj.sim(8.9, 8.9), 1)
+        self.assertEqual(obj.sim(10, 5), 0.5)
+        self.assertEqual(obj.sim(10, 15), 0.5)
+        self.assertEqual(obj.sim(8.2, 3.1), 0.49)
+        self.assertEqual(obj.sim(40, 10), 0)
+
+
+class TestRelativeNumericalSimilarity(unittest.TestCase):
+    def test_sim(self):
+        obj = RelativeNumericalSimilarity(30)
+        self.assertEqual(obj.sim(10000, 10000), 1)
+        self.assertEqual(obj.sim(8.9, 8.9), 1)
+        self.assertEqual(obj.sim(10000, 8500), 0.5)
+        self.assertEqual(obj.sim(8500, 10000), 0.5)
+        self.assertEqual(obj.sim(8.2, 3.1), 0)
+        self.assertEqual(obj.sim(10000, 7000), 0)
