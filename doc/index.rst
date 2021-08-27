@@ -7,9 +7,11 @@ Welcome to Datamatch's documentation!
 =====================================
 
 .. toctree::
+   :titlesonly:
    :maxdepth: 2
    :caption: Contents:
 
+   introduction
    reference/index
 
 
