@@ -1,3 +1,10 @@
+"""
+A variator creates variations of a single record. :class:`ThresholdMatcher` can produce different similarity
+scores for different variations of the same record, discarding all but the highest score in the final result.
+This is very useful in situations where values are not put into the correct columns (e.g. when a person's first
+name and last name are swapped).
+"""
+
 from typing import Iterator
 
 import pandas as pd
@@ -6,43 +13,43 @@ import pandas as pd
 class Variator(object):
     """Base class of all variator classes
 
-    A variator creates variations from a single record. This class
-    serves as a noop variator. It simply return the record as is.
+    Sub-class should override method :meth:`variations`.
+
+    This class also serves as a no-op variator. It simply returns the record as is.
     """
 
     def variations(self, sr: pd.Series) -> Iterator[pd.Series]:
-        """Produces variations of the same record
+        """Returns variations of the input record
 
-        Args:
-            sr (pd.Series):
-                the record to retun variations for
+        :param sr: The input record
+        :type sr: :class:`pandas:pandas.Series`
 
-        Returns:
-            an iterator of variations
+        :rtype: :ref:`Iterator <python:typeiter>` of :class:`pandas:pandas.Series`
         """
         yield sr
 
 
 class Swap(Variator):
-    """Produces variations by swapping column values"""
+    """Produces variations by swapping values between 2 columns"""
 
     def __init__(self, column_a: str, column_b: str) -> None:
-        """Creates new instance of Swap
+        """
+        :param column_a: The left column
+        :type column_a: :obj:`str`
 
-        Args:
-            column_a (str):
-                first column name
-            column_b (str):
-                last column name
-
-        Returns:
-            no value
+        :param column_b: The right column
+        :type column_b: :obj:`str`
         """
         super().__init__()
         self._col_a = column_a
         self._col_b = column_b
 
     def variations(self, sr: pd.Series) -> Iterator[pd.Series]:
+        """
+        .. hiding method's docstring
+
+        :meta private:
+        """
         yield sr
         if not (pd.isna(sr[self._col_a]) and pd.isna(sr[self._col_b])) and (sr[self._col_a] != sr[self._col_b]):
             sr = sr.copy(True)

@@ -2,7 +2,7 @@ Indices
 =======
 
 
-.. automodule:: indices
+.. automodule:: datamatch.indices
     :members:
 
 

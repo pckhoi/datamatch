@@ -44,6 +44,8 @@ class DissimilarFilter(BaseFilter):
 
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
         """
+        .. hiding method's docstring
+
         :meta private:
         """
         val_a = a[self._col]
@@ -77,6 +79,8 @@ class NonOverlappingFilter(BaseFilter):
 
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
         """
+        .. hiding method's docstring
+
         :meta private:
         """
         return a[self._end] < b[self._start] or a[self._start] > b[self._end]

@@ -2,6 +2,6 @@ Filters
 =======
 
 
-.. automodule:: filters
+.. automodule:: datamatch.filters
     :members:
     

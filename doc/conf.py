@@ -12,7 +12,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../datamatch'))
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -51,6 +51,7 @@ intersphinx_mapping = {
 
 autodoc_typehints = 'none'
 autoclass_content = 'both'
+autodoc_member_order = 'bysource'
 
 
 # -- Options for HTML output -------------------------------------------------

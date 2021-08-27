@@ -10,8 +10,7 @@ Welcome to Datamatch's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   reference/indices
-   reference/filters
+   reference/index
 
 
 
