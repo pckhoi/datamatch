@@ -2,12 +2,12 @@ Introduction
 ============
 
 Datamatch is a library that facilitates data matching (also known as entity resolution) and deduplication process.
-One of the core design goal of this library is to be as extensible as possible, therefore each sub-task are defined
-as a separate class, which makes it easy to swap components of the same type and even to write your own component
+One of the core design goals of this library is to be as extensible as possible, therefore each sub-task is defined
+as a separate class, which makes it easy to swap components of the same type and even to write your component
 that fit your purpose.
 
-For now the only classification method supported is threshold-based classification (implemented with
-:class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>`). However no matter what methods of classification
+For now, the only classification method supported is threshold-based classification (implemented with
+:class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>`). However, no matter what methods of classification
 are eventually added to this library, concepts such as :ref:`Indices` and :ref:`Filters` will still apply.
 Therefore this library is reasonably prepared to be extended to eventually support most data matching use cases.
 
@@ -21,8 +21,8 @@ Installation
 Tutorial
 --------
 
-First, download the :download:`DBLP-ACM dataset <DBLP-ACM.zip>` to current folder and unzip. (this dataset was made
-available by the database group of Prof. Erhard Rahm, see more
+First, download the :download:`DBLP-ACM dataset <DBLP-ACM.zip>` to your working directory and unzip it. (this dataset was
+made available by the database group of Prof. Erhard Rahm, see more
 `here <https://dbs.uni-leipzig.de/de/research/projects/object_matching/benchmark_datasets_for_entity_resolution>`_)
 
 .. code-block:: bash
@@ -73,11 +73,11 @@ Try matching for the first time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a quick primer on how threshold-based classification work. For each pair of records, produce a similarity score
-(ranges from 0 to 1) between each corresponding fields, then combine to produce a final similarity score (also ranges
-from 0 to 1). You can select different similarity function for each field depending on their characteristics (see more
+(ranges from 0 to 1) between each corresponding field, then combine to produce a final similarity score (also ranges
+from 0 to 1). You can select different similarity functions for each field depending on their characteristics (see more
 similarity functions :ref:`here <Similarities>`). Finally which pairs count as matches depends on an arbitrary threshold
 (for similarity score) that you specify. While this classification method is not the gold standard in any way, it is
-simple and does not require any training data, which makes it a great fit to many problems. To learn in-depth details,
+simple and does not require any training data, which makes it a great fit for many problems. To learn in-depth details,
 see [1]_.
 
 You can now start matching data using :class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>`. Notice how simple it all is, you just need to specify
@@ -98,18 +98,17 @@ the datasets to match and which similarity function to use for each field:
             'authors': StringSimilarity(),
         }, dfa, dfb)
 
-And let's wait... Actually if you have been waiting for like 5 minutes you can stop it now. We're comparing 6 millions
+And let's wait... Actually, if you have been waiting for like 5 minutes you can stop it now. We're comparing 6 million
 pairs of records so it would help tremendously if only there are some ways to increase performance.
 
 Introducing the index
 ~~~~~~~~~~~~~~~~~~~~~
 
-The index (not to be confused with Pandas Index) is a data structure that helps reducing the number of pairs to be
-compared. It does this by dividing up each dataset into buckets such that only records that could possibly be matched
-will end up in the same bucket. The matching process will then only consider a pair of records if both come from the
-same bucket. Without this technique, matching two datasets with `n` and `m` records, respectively, would take `n x m`
+The index (not to be confused with Pandas Index) is a data structure that helps to reduce the number of pairs to be
+compared. It does this by deriving an indexing key from each record and only attempt to match records that have the
+same key. Without this technique, matching two datasets with `n` and `m` records, respectively, would take `n x m`
 detailed comparisons, which is probably infeasible for most non-trivial use cases. To learn more about indexing, see
-[2]_. Another technique to reduce numbers of pairs but works the opposite way of indexing is :ref:`filtering <Filters>`.
+[2]_. Another technique to reduce the number of pairs but works the opposite way of indexing is :ref:`filtering <Filters>`.
 
 We have been using :class:`NoopIndex <datamatch.indices.NoopIndex>` which is the same as using no index whatsoever.
 We can do better. Notice how the `year` column in both datasets denote the year in which the article was published.
@@ -130,15 +129,15 @@ with :class:`ColumnsIndex <datamatch.indices.ColumnsIndex>`:
             'authors': StringSimilarity(),
         }, dfa, dfb)
 
-Now this should run under 1 or 2 minutes. This is not the best performance that we can wring out of this dataset but
+Now, this should run for under 1 or 2 minutes. This is not the best performance that we can wring out of this dataset but
 very good for how little effort it requires.
 
 Select a threshold
 ~~~~~~~~~~~~~~~~~~
 
 The :class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>` class does not require a threshold up-front because
-usually it is useful to be able to experiment with different thresholds after the matching is done. Let's see what the
-pairs looks like:
+usually, it is useful to be able to experiment with different thresholds after the matching is done. Let's see what the
+pairs look like:
 
 .. code-block:: python
 
@@ -155,7 +154,7 @@ This will print a multi-index frame that shows 5 pairs under each threshold rang
 more tools at our disposal. If you want to see all pairs, use :meth:`get_all_pairs <datamatch.matchers.ThresholdMatcher.get_all_pairs>`.
 If you want to save to Excel for reviewing, use :meth:`save_pairs_to_excel <datamatch.matchers.ThresholdMatcher.save_pairs_to_excel>`.
 
-After a bit of experimentations, I selected `0.577` as my threshold. Let's see the end result:
+After a bit of experimentation, I selected `0.577` as my threshold. Let's see the result:
 
 .. code-block:: python
 
