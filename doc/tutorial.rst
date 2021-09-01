@@ -1,25 +1,7 @@
-Introduction
-============
-
-Datamatch is a library that facilitates data matching (also known as entity resolution) and deduplication process.
-One of the core design goals of this library is to be as extensible as possible, therefore each sub-task is defined
-as a separate class, which makes it easy to swap components of the same type and even to write your component
-that fit your purpose.
-
-For now, the only classification method supported is threshold-based classification (implemented with
-:class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>`). However, no matter what methods of classification
-are eventually added to this library, concepts such as :ref:`Indices` and :ref:`Filters` will still apply.
-Therefore this library is reasonably prepared to be extended to eventually support most data matching use cases.
-
-Installation
-------------
-
-.. code-block:: bash
-
-    pip install datamatch
+:github_url: https://github.com/pckhoi/datamatch/blob/main/doc/tutorial.rst
 
 Tutorial
---------
+========
 
 First, download the :download:`DBLP-ACM dataset <DBLP-ACM.zip>` to your working directory and unzip it. (this dataset was
 made available by the database group of Prof. Erhard Rahm, see more
@@ -34,7 +16,7 @@ them. Our job is to match articles from those two sources such that we can produ
 perfect matching as possible.
 
 Load and clean data
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 Preceding the matching step is the data cleaning and standardization step, which is of great importance. We're keeping
 this step as simple as possible:
@@ -70,7 +52,7 @@ this step as simple as possible:
         return df
 
 Try matching for the first time
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 
 Here's a quick primer on how threshold-based classification work. For each pair of records, produce a similarity score
 (ranges from 0 to 1) between each corresponding field, then combine to produce a final similarity score (also ranges
@@ -102,7 +84,7 @@ And let's wait... Actually, if you have been waiting for like 5 minutes you can 
 pairs of records so it would help tremendously if only there are some ways to increase performance.
 
 Introducing the index
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 The index (not to be confused with Pandas Index) is a data structure that helps to reduce the number of pairs to be
 compared. It does this by deriving an indexing key from each record and only attempt to match records that have the
@@ -133,7 +115,7 @@ Now, this should run for under 1 or 2 minutes. This is not the best performance 
 very good for how little effort it requires.
 
 Select a threshold
-~~~~~~~~~~~~~~~~~~
+------------------
 
 The :class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>` class does not require a threshold up-front because
 usually, it is useful to be able to experiment with different thresholds after the matching is done. Let's see what the
@@ -149,9 +131,9 @@ pairs look like:
         ...
         print(matcher.get_sample_pairs())
 
-This will print a multi-index frame that shows 5 pairs under each threshold ranges (by defaults: 1.00-0.95, 0.95-0.90,
-0.90-0.85, 0.85-0.80, 0.80-0.75, and 0.75-0.70). This should give you an idea of what threshold to use. But there are
-more tools at our disposal. If you want to see all pairs, use :meth:`get_all_pairs <datamatch.matchers.ThresholdMatcher.get_all_pairs>`.
+This will print a multi-index frame that shows 5 pairs under each threshold ranges (by defaults: ``1.00-0.95``, ``0.95-0.90``,
+``0.90-0.85``, ``0.85-0.80``, ``0.80-0.75``, and ``0.75-0.70``). This should give you an idea of what threshold to use.
+But there are more tools at our disposal. If you want to see all pairs, use :meth:`get_all_pairs <datamatch.matchers.ThresholdMatcher.get_all_pairs>`.
 If you want to save to Excel for reviewing, use :meth:`save_pairs_to_excel <datamatch.matchers.ThresholdMatcher.save_pairs_to_excel>`.
 
 After a bit of experimentation, I selected `0.577` as my threshold. Let's see the result:
