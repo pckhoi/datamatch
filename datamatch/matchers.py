@@ -21,6 +21,9 @@ from .variators import Variator
 
 
 class ContinueOuter(Exception):
+    """
+    :meta private:
+    """
     pass
 
 
