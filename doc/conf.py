@@ -12,6 +12,7 @@
 
 import os
 import sys
+sys.path.insert(0, os.path.abspath("./_ext"))
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -36,7 +37,10 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinx_rtd_theme',
     'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive'
+    'IPython.sphinxext.ipython_directive',
+
+    # custom extensions
+    'unzip'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

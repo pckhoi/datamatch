@@ -12,6 +12,8 @@ demonstrate this capability. Again download and unzip if you haven't:
 
     unzip DBLP-ACM.zip -d DBLP-ACM
 
+.. unzip:: DBLP-ACM.zip DBLP-ACM
+
 Load data
 ---------
 

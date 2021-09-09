@@ -10,6 +10,8 @@ working directory and unzip it.
 
     unzip DBLP-ACM.zip -d DBLP-ACM
 
+.. unzip:: DBLP-ACM.zip DBLP-ACM
+
 This dataset contains article names, authors, and years from two different
 sources, and the perfect matching between them. Our job is to match articles
 from those two sources such that we can produce a result as close to the
