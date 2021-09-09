@@ -49,7 +49,7 @@ which is of great importance. We're keeping this step as simple as possible:
 
 .. ipython::
 
-    In [0]: dfb = pd.read_csv('DBLP-ACM/DBLP2.csv')
+    In [0]: dfb = pd.read_csv('DBLP-ACM/DBLP2.csv', encoding='latin_1')
        ...: # here we do the same cleaning step
        ...: dfb = dfb.set_index('id', drop=True)
        ...: dfb.loc[:, 'title'] = dfb.title.str.strip().str.lower()
@@ -193,7 +193,7 @@ see the result:
     @doctest
     In [4]: sensitivity = len(pm[pm.index.isin(res.index)]) / len(pm)
        ...: sensitivity
-    Out[4]: 0.9937050359712231
+    Out[4]: 0.9932553956834532
 
     @doctest
     In [5]: specificity = 1 - len(res[~res.index.isin(pm.index)]) / (total - len(pm))

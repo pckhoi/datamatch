@@ -43,7 +43,7 @@ Load data
 
 .. ipython::
 
-    In [0]: dfb = pd.read_csv('DBLP-ACM/DBLP2.csv')
+    In [0]: dfb = pd.read_csv('DBLP-ACM/DBLP2.csv', encoding='latin_1')
        ...: # here we do the same cleaning step
        ...: dfb = dfb.set_index('id', drop=True)
        ...: dfb.loc[:, 'title'] = dfb.title.str.strip().str.lower()
