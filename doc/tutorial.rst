@@ -21,35 +21,33 @@ Load and clean data
 Preceding the matching step is the data cleaning and standardization step, which is of great importance. We're keeping
 this step as simple as possible:
 
-.. code-block:: python
+.. ipython::
 
-    # example.py
-    import pandas as pd
-    from datamatch import (
-        ThresholdMatcher, StringSimilarity, NoopIndex, ColumnsIndex
-    )
-
-    def load_and_clean_acm():
-        df = pd.read_csv('DBLP-ACM/ACM.csv')
-        # set `id` as the index for this frame, this is important because the library
-        # relies on the frame's index to tell which row is which.
-        df = df.set_index('id', drop=True)
-        # make sure titles are all in lower case
-        df.loc[:, 'title'] = df.title.str.strip().str.lower()
-        # split author names by comma and sort them before joining them back with comma
-        df.loc[df.authors.notna(), 'authors'] = df.loc[df.authors.notna(), 'authors']\
-            .map(lambda x: ', '.join(sorted(x.split(', '))))
-        return df
-
-
-    def load_and_clean_dblp():
-        df = pd.read_csv('DBLP-ACM/DBLP2.csv')
-        # here we do the same cleaning step
-        df = df.set_index('id', drop=True)
-        df.loc[:, 'title'] = df.title.str.strip().str.lower()
-        df.loc[df.authors.notna(), 'authors'] = df.loc[df.authors.notna(), 'authors']\
-            .map(lambda x: ', '.join(sorted(x.split(', '))))
-        return df
+    In [0]: import pandas as pd
+       ...: from datamatch import (
+       ...:     ThresholdMatcher, StringSimilarity, NoopIndex, ColumnsIndex
+       ...: )
+       
+    In [0]: def load_and_clean_acm():
+       ...:     df = pd.read_csv('DBLP-ACM/ACM.csv')
+       ...:     # set `id` as the index for this frame, this is important because the library
+       ...:     # relies on the frame's index to tell which row is which.
+       ...:     df = df.set_index('id', drop=True)
+       ...:     # make sure titles are all in lower case
+       ...:     df.loc[:, 'title'] = df.title.str.strip().str.lower()
+       ...:     # split author names by comma and sort them before joining them back with comma
+       ...:     df.loc[df.authors.notna(), 'authors'] = df.loc[df.authors.notna(), 'authors']\
+       ...:         .map(lambda x: ', '.join(sorted(x.split(', '))))
+       ...:     return df
+    
+    In [0]: def load_and_clean_dblp():
+       ...:     df = pd.read_csv('DBLP-ACM/DBLP2.csv')
+       ...:     # here we do the same cleaning step
+       ...:     df = df.set_index('id', drop=True)
+       ...:     df.loc[:, 'title'] = df.title.str.strip().str.lower()
+       ...:     df.loc[df.authors.notna(), 'authors'] = df.loc[df.authors.notna(), 'authors']\
+       ...:         .map(lambda x: ', '.join(sorted(x.split(', '))))
+       ...:     return df
 
 Try matching for the first time
 -------------------------------
@@ -65,20 +63,16 @@ see [1]_.
 You can now start matching data using :class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>`. Notice how simple it all is, you just need to specify
 the datasets to match and which similarity function to use for each field:
 
-.. code-block:: python
+.. ipython::
 
-    # example.py
+    In [0]: dfa = load_and_clean_acm()
+       ...: dfb = load_and_clean_dblp()
 
-    ...
-
-    if __name__ == '__main__':
-        dfa = load_and_clean_acm()
-        dfb = load_and_clean_dblp()
-
-        matcher = ThresholdMatcher(NoopIndex(), {
-            'title': StringSimilarity(),
-            'authors': StringSimilarity(),
-        }, dfa, dfb)
+    @verbatim
+    In [1]: matcher = ThresholdMatcher(NoopIndex(), {
+       ...:     'title': StringSimilarity(),
+       ...:     'authors': StringSimilarity(),
+       ...: }, dfa, dfb)
 
 And let's wait... Actually, if you have been waiting for like 5 minutes you can stop it now. We're comparing 6 million
 pairs of records so it would help tremendously if only there are some ways to increase performance.
@@ -97,19 +91,12 @@ We can do better. Notice how the `year` column in both datasets denote the year 
 It is very unlikely then that two articles within different years could be the same. Let's employ this `year` column
 with :class:`ColumnsIndex <datamatch.indices.ColumnsIndex>`:
 
-.. code-block:: python
+.. ipython::
 
-    # example.py
-
-    ...
-
-    if __name__ == '__main__':
-        ...
-
-        matcher = ThresholdMatcher(ColumnsIndex('year'), {
-            'title': StringSimilarity(),
-            'authors': StringSimilarity(),
-        }, dfa, dfb)
+    In [0]: matcher = ThresholdMatcher(ColumnsIndex('year'), {
+       ...:     'title': StringSimilarity(),
+       ...:     'authors': StringSimilarity(),
+       ...: }, dfa, dfb)
 
 Now, this should run for under 1 or 2 minutes. This is not the best performance that we can wring out of this dataset but
 very good for how little effort it requires.
@@ -121,54 +108,44 @@ The :class:`ThresholdMatcher <datamatch.matchers.ThresholdMatcher>` class does n
 usually, it is useful to be able to experiment with different thresholds after the matching is done. Let's see what the
 pairs look like:
 
-.. code-block:: python
+.. ipython::
 
-    # example.py
+    In [0]: matcher.get_sample_pairs()
 
-    ...
-
-    if __name__ == '__main__':
-        ...
-        print(matcher.get_sample_pairs())
-
-This will print a multi-index frame that shows 5 pairs under each threshold ranges (by defaults: ``1.00-0.95``, ``0.95-0.90``,
-``0.90-0.85``, ``0.85-0.80``, ``0.80-0.75``, and ``0.75-0.70``). This should give you an idea of what threshold to use.
+This returns a multi-index frame that shows 5 pairs under each threshold ranges. This should give you an idea of what threshold to use.
 But there are more tools at our disposal. If you want to see all pairs, use :meth:`get_all_pairs <datamatch.matchers.ThresholdMatcher.get_all_pairs>`.
 If you want to save to Excel for reviewing, use :meth:`save_pairs_to_excel <datamatch.matchers.ThresholdMatcher.save_pairs_to_excel>`.
 
 After a bit of experimentation, I selected `0.577` as my threshold. Let's see the result:
 
-.. code-block:: python
+.. ipython::
 
-    # example.py
+    In [0]: # this will return each pair as a tuple of index from both datasets
+       ...: pairs = matcher.get_index_pairs_within_thresholds(0.577)
 
-    ...
+    In [1]: # we can construct a dataframe out of it with similar column names
+       ...: # to this dataset's perfect mapping CSV.
+       ...: res = pd.DataFrame(pairs, columns=['idACM', 'idDBLP'])\
+       ...:     .set_index(['idACM', 'idDBLP'], drop=False)
 
-    if __name__ == '__main__':
-        ...
+    In [2]: # load the perfect mapping
+       ...: pm = pd.read_csv('DBLP-ACM/DBLP-ACM_perfectMapping.csv')\
+       ...:     .set_index(['idACM', 'idDBLP'], drop=False)
 
-        # this will return each pair as a tuple of index from both datasets
-        pairs = matcher.get_index_pairs_within_thresholds(0.577)
-        # we can construct a dataframe out of it with similar column names
-        # to this dataset's perfect mapping CSV.
-        res = pd.DataFrame(pairs, columns=['idACM', 'idDBLP'])\
-            .set_index(['idACM', 'idDBLP'], drop=False)
+    @doctest
+    In [3]: total = len(dfa) * len(dfb)
+       ...: total
+    Out[3]: 6001104
 
-        # load the perfect mapping
-        pm = pd.read_csv('DBLP-ACM/DBLP-ACM_perfectMapping.csv')\
-            .set_index(['idACM', 'idDBLP'], drop=False)
+    @doctest
+    In [4]: sensitivity = len(pm[pm.index.isin(res.index)]) / len(pm)
+       ...: sensitivity
+    Out[4]: 0.9937050359712231
 
-        total = len(dfa) * len(dfb)
-        print("total:", total)
-        # total: 6001104
-
-        sensitivity = len(pm[pm.index.isin(res.index)]) / len(pm)
-        print("sensitivity:", sensitivity)
-        # sensitivity: 0.9937050359712231
-
-        specificity = 1 - len(res[~res.index.isin(pm.index)]) / (total - len(pm))
-        print("specificity:", specificity)
-        # specificity: 0.9999978329288134
+    @doctest
+    In [5]: specificity = 1 - len(res[~res.index.isin(pm.index)]) / (total - len(pm))
+       ...: specificity
+    Out[5]: 0.9999978329288134
 
 The `sensitivity` and `specificity` are not perfect but they're still great considering how simple this matching script
 is.
