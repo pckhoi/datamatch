@@ -3,14 +3,14 @@
 Filtering
 =========
 
-Sometime it is easier to express what pairs should be matched in term of
+Sometimes it is easier to express what pairs should be matched in terms of
 what conditions can be used to mark a pair as unmatchable instead of what
 conditions can be used to mark a pair as matchable, which is the approach
-of indexing. Filtering is a technique that also aim to improve matching
+of indexing. Filtering is a technique that also aims to improve matching
 performance, but using conditions to reject a pair instead. You can employ
 both filtering and indexing or just one of them.
 
-This example demonstrate how filtering work:
+This example demonstrates how filtering work:
 
 .. ipython::
 

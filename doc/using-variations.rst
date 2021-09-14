@@ -3,10 +3,10 @@
 Using variations
 ================
 
-Sometime it is useful to derive multiple variations from a single record
+Sometimes it is useful to derive multiple variations from a single record
 and try each variation during matching while retaining the highest
 similarity score. An example of how this might be useful is when a person's
-first name and last name are swapped due to clerical mistake. You might
+first name and last name are swapped due to clerical mistakes. You might
 want to produce one additional variation for each record where the name
 columns are swapped before matching.
 

@@ -78,29 +78,29 @@ to deduplicate instead of matching:
 All other concepts such as the index and similarity functions apply equally.
 :meth:`get_sample_pairs <datamatch.matchers.ThresholdMatcher.get_sample_pairs>`
 should still be used to review how pairs within certain thresholds look like.
-But in general the desired result are clusters instead of pairs because unlike
+But in general, the desired result is clusters instead of pairs because unlike
 when matching two different datasets, there can be more than two rows that are
-identified as the same entity. Methods that returns clusters are:
+identified as the same entity. Methods that return clusters are:
 
 - :meth:`get_clusters_within_threshold <datamatch.matchers.ThresholdMatcher.get_clusters_within_threshold>`:
   returns matching clusters as a multi-index frame. It has the following index
   levels:
 
   * **cluster_idx**: cluster number.
-  * **pair_idx**: pair number within cluster. All rows within a cluster
+  * **pair_idx**: pair number within the cluster. All rows within a cluster
     are paired up, each pair are then ordered by descending similarity score.
   * **sim_score**: the similarity score.
-  * **row_key**: the row index from input dataset.
+  * **row_key**: the row index from the input dataset.
 
 .. ipython::
 
     In [0]: matcher.get_clusters_within_threshold(0.7).head(30)
 
 - :meth:`save_clusters_to_excel <datamatch.matchers.ThresholdMatcher.save_clusters_to_excel>`:
-  saves matching clusters to an Excel file for reviewing. Output is similar to
+  saves matching clusters to an Excel file for review. Output is similar to
   :meth:`get_clusters_within_threshold <datamatch.matchers.ThresholdMatcher.get_clusters_within_threshold>`.
 - :meth:`get_index_clusters_within_thresholds <datamatch.matchers.ThresholdMatcher.get_index_clusters_within_thresholds>`:
-  returns matching clusters as a list. Each cluster represented by a frozenset
+  returns matching clusters as a list. Each cluster is represented by a frozenset
   of row indices. You'll want to use this instead of
   :meth:`get_index_pairs_within_thresholds <datamatch.matchers.ThresholdMatcher.get_index_pairs_within_thresholds>`.
 

@@ -135,31 +135,30 @@ range, ordered by descending similarity score. The purpose is to give you an
 overview of what the matching records are like under different thresholds.
 The returned frame has four index levels:
 
-- **score_range**: the range of score. By default each range has a width of
+- **score_range**: the range of score. By default, each range has a width of
   0.05. You can tweak this value with the ``step`` argument.
-- **pair_idx**: the index of each pair within the range. By default it shows
-  maximum 5 pairs within each range. You can tweak this value with the
+- **pair_idx**: the index of each pair within the range. By default, it shows
+  a maximum of 5 pairs within each range. You can tweak this value with the
   ``sample_counts`` argument.
 - **sim_score**: the similarity score of this pair.
-- **row_key**: the row index from the input datasets. Usually the desired
+- **row_key**: the row index from the input datasets. Usually, the desired
   output of the matching process is a list of matching pairs, each
   represented by a tuple of indices from the input datasets. You can get
   this list with
   :meth:`get_index_pairs_within_thresholds <datamatch.matchers.ThresholdMatcher.get_index_pairs_within_thresholds>`
   as will be demonstrated below.
 
-The columns of this frame are the same columns as the input datasets
-regardless of whether they were used to compute similarity score.
+The columns of this frame are the same as the input datasets
+regardless of whether they were used to compute the similarity score.
 
-For the purpose of choosing the correct threshold, there are more tools
-at our disposal:
+To experiment with thresholds, there are more tools at our disposal:
 
 - :meth:`get_all_pairs <datamatch.matchers.ThresholdMatcher.get_all_pairs>`:
   Returns matching pairs as a multi-index frame. It has the following levels:
 
   * **pair_idx**: the pair number.
   * **sim_score**: the similarity score.
-  * **row_key**: the row index from input dataset.
+  * **row_key**: the row index from the input dataset.
 
 .. ipython::
 
@@ -200,7 +199,7 @@ see the result:
        ...: specificity
     Out[5]: 0.9999978329288134
 
-The `sensitivity` and `specificity` are not perfect but they're still great
+The `sensitivity` and `specificity` are not perfect, but they're still great
 considering how simple this matching script is.
 
 .. [1] `DBLP-ACM dataset <https://dbs.uni-leipzig.de/de/research/projects/object_matching/benchmark_datasets_for_entity_resolution>`_

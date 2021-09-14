@@ -9,7 +9,7 @@ Welcome to Datamatch's documentation!
 =====================================
 
 Datamatch is a library that facilitates data matching (also known as entity
-resolution) and deduplication process. One of the core design goals of this
+resolution) and the deduplication process. One of the core design goals of this
 library is to be as extensible as possible, therefore each sub-task is defined
 as a separate class, which makes it easy to swap components of the same type
 and even to write your component that fit your purpose.
