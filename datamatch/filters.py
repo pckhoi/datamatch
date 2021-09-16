@@ -1,6 +1,6 @@
 """
-A filter discards pairs from the matching process. It does the opposite of an index which dictates which pair can be compared.
-They are both employed to increase matching performance. 
+A filter discards pairs from the matching process. An index, which dictates which pair can be compared,
+does the opposite. They are both employed to increase matching performance.
 """
 
 from abc import ABC, abstractmethod
@@ -18,13 +18,13 @@ class BaseFilter(ABC):
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
         """Returns true if a pair of records is valid (can be matched).
 
-        :param a: the left record
+        :param a: the left record.
         :type a: :class:`pandas:pandas.Series`
 
-        :param b: the right record
+        :param b: the right record.
         :type b: :class:`pandas:pandas.Series`
 
-        :return: whether these 2 records can be matched
+        :return: Whether these two records can be matched.
         :rtype: :obj:`bool`
         """
         raise NotImplementedError()
@@ -36,7 +36,7 @@ class DissimilarFilter(BaseFilter):
 
     def __init__(self, col: str) -> None:
         """
-        :param col: the column to check
+        :param col: the column to check.
         :type col: :obj:`str`
         """
         super().__init__()
@@ -67,10 +67,10 @@ class NonOverlappingFilter(BaseFilter):
 
         e.g. `df[end] < df[start]` should produce a boolean series.
 
-        :param start: the range start column
+        :param start: the range start column.
         :type start: :obj:`str`
 
-        :param end: the range end column
+        :param end: the range end column.
         :type end: :obj:`str`
         """
         super().__init__()

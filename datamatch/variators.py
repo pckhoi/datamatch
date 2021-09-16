@@ -11,7 +11,7 @@ import pandas as pd
 
 
 class Variator(object):
-    """Base class of all variator classes
+    """Base class of all variator classes.
 
     Sub-class should override method :meth:`variations`.
 
@@ -19,9 +19,9 @@ class Variator(object):
     """
 
     def variations(self, sr: pd.Series) -> Iterator[pd.Series]:
-        """Returns variations of the input record
+        """Returns variations of the input record.
 
-        :param sr: The input record
+        :param sr: The input record.
         :type sr: :class:`pandas:pandas.Series`
 
         :rtype: :ref:`Iterator <python:typeiter>` of :class:`pandas:pandas.Series`
@@ -30,14 +30,14 @@ class Variator(object):
 
 
 class Swap(Variator):
-    """Produces variations by swapping values between 2 columns"""
+    """Produces variations by swapping values between two columns"""
 
     def __init__(self, column_a: str, column_b: str) -> None:
         """
-        :param column_a: The left column
+        :param column_a: The left column.
         :type column_a: :obj:`str`
 
-        :param column_b: The right column
+        :param column_b: The right column.
         :type column_b: :obj:`str`
         """
         super().__init__()

@@ -1,6 +1,6 @@
 """
-A similarity class when given a pair of values, produces a similarity score that ranges between 0 and 1.
-A similarity score of 1 means the 2 values are completely identical while 0 means there are no similarities.
+When given a pair of values, a similarity class produces a similarity score that ranges between 0 and 1.
+A similarity score of 1 means the two values are completely identical while 0 means there are no similarities.
 
 Note that these classes only compute similarity scores between scalar values or native Python objects such as
 :class:`datetime.datetime`, not the entire row (which is handled by :class:`ThresholdMatcher`).
@@ -12,18 +12,19 @@ from unidecode import unidecode
 
 
 class StringSimilarity(object):
-    """Computes similarity score between 2 strings using Levenshtein distance"""
+    """Computes a similarity score between two strings using Levenshtein distance.
+    """
 
     def sim(self, a: str, b: str):
-        """Returns a similarity score
+        """Returns a similarity score.
 
-        :param a: The left string
+        :param a: The left string.
         :type a: :obj:`str`
 
-        :param b: The right string
+        :param b: The right string.
         :type b: :obj:`str`
 
-        :return: The similarity score
+        :return: The similarity score.
         :rtype: :obj:`float`
         """
         return ratio(unidecode(a), unidecode(b))
@@ -38,28 +39,28 @@ class JaroWinklerSimilarity(object):
 
     def __init__(self, prefix_weight=0.1):
         """
-        :param prefix_weight: The extra weight given to common prefixes, defaults to 0.1
+        :param prefix_weight: The extra weight given to common prefixes, defaults to 0.1.
         :type prefix_weight: :obj:`float`
         """
         self._prefix_weight = prefix_weight
 
     def sim(self, a: str, b: str):
-        """Returns a similarity score
+        """Returns a similarity score.
 
-        :param a: The left string
+        :param a: The left string.
         :type a: :obj:`str`
 
-        :param b: The right string
+        :param b: The right string.
         :type b: :obj:`str`
 
-        :return: The similarity score
+        :return: The similarity score.
         :rtype: :obj:`float`
         """
         return jaro_winkler(unidecode(a), unidecode(b), self._prefix_weight)
 
 
 class AbsoluteNumericalSimilarity(object):
-    """Computes similarity score between two numbers, extrapolated from a maximum absolute difference
+    """Computes similarity score between two numbers, extrapolated from a maximum absolute difference.
 
     Maximum absolute difference **d_max** (greater than 0) is the maximum tolerated difference
     between two numbers regardless of their actual values. If the difference between the two values
@@ -71,21 +72,21 @@ class AbsoluteNumericalSimilarity(object):
 
     def __init__(self, d_max: float) -> None:
         """
-        :param d_max: The maximum absolute difference
+        :param d_max: The maximum absolute difference.
         :type d_max: :obj:`float`
         """
         self._d_max = d_max
 
     def sim(self, a: float or int, b: float or int) -> float:
-        """Returns a similarity score
+        """Returns a similarity score.
 
-        :param a: The left number
+        :param a: The left number.
         :type a: :obj:`float` or :obj:`int`
 
-        :param b: The right number
+        :param b: The right number.
         :type b: :obj:`float` or :obj:`int`
 
-        :return: The similarity score
+        :return: The similarity score.
         :rtype: :obj:`float`
         """
         d = abs(a - b)
@@ -95,7 +96,7 @@ class AbsoluteNumericalSimilarity(object):
 
 
 class RelativeNumericalSimilarity(object):
-    """Computes similarity score between two numbers, extrapolated from a maximum percentage difference
+    """Computes similarity score between two numbers, extrapolated from a maximum percentage difference.
 
     This class serves a similar purpose to :class:`AbsoluteNumericalSimilarity` but is more dependent on
     the actual values being compared.
@@ -112,7 +113,7 @@ class RelativeNumericalSimilarity(object):
 
     def __init__(self, pc_max: int) -> None:
         """
-        :param pc_max: The maximum percentage difference
+        :param pc_max: The maximum percentage difference.
         :type pc_max: :obj:`int`
         """
         self._pc_max = pc_max
@@ -120,13 +121,13 @@ class RelativeNumericalSimilarity(object):
     def sim(self, a: float or int, b: float or int) -> float:
         """Returns a similarity score
 
-        :param a: The left number
+        :param a: The left number.
         :type a: :obj:`float` or :obj:`int`
 
-        :param b: The right number
+        :param b: The right number.
         :type b: :obj:`float` or :obj:`int`
 
-        :return: The similarity score
+        :return: The similarity score.
         :rtype: :obj:`float`
         """
         d = abs(a - b)
@@ -137,18 +138,18 @@ class RelativeNumericalSimilarity(object):
 
 
 class DateSimilarity(object):
-    """Computes similarity score between two dates, extrapolated from a maximum absolute difference in days
+    """Computes similarity score between two dates, extrapolated from a maximum absolute difference in days.
 
     Maximum absolute difference in days **d_max** is the maximum tolerated difference in days between two dates.
     Similar to :class:`AbsoluteNumericalSimilarity` if both dates `a` and `b` are less than **d_max** days
     apart then the similarity score is ``1 - (a - b) / d_max``.
 
-    If however ``(a - b) >= d_max`` then we employs 2 alternative strategies to hedge against typos:
+    If however ``(a - b) >= d_max`` then we employs two alternative strategies to hedge against typos:
 
     - If the year values are the same but the month and day values are swapped, then the similarity score is 0.5.
 
-    - | The last resort is to write each date in `YYYYMMDD` format and computes the similarity score from
-      | the Levenshtein distance between the resulting strings.
+    - | The last resort is to write each date in `YYYYMMDD` format and computes the similarity score between
+      | two strings.
 
     Implementation follows strategy for date/time given in the Data Matching book [2]_
     """
@@ -163,15 +164,15 @@ class DateSimilarity(object):
         self._d_max = d_max
 
     def sim(self, a: datetime, b: datetime):
-        """Returns a similarity score
+        """Returns a similarity score.
 
-        :param a: The left date
+        :param a: The left date.
         :type a: :obj:`datetime.datetime`
 
-        :param b: The right date
+        :param b: The right date.
         :type b: :obj:`datetime.datetime`
 
-        :return: The similarity score
+        :return: The similarity score.
         :rtype: :obj:`float`
         """
         d = a - b

@@ -1,5 +1,5 @@
 """
-A matcher matches records from 2 datasets (deduplicate if it is only given 1 dataset). It is also the main entry for this
+A matcher matches records from two datasets (deduplicate if it is only given one dataset). It is also the main entry for this
 library. Through its constructor, you can configure which index to use, which and how each column should be compared, etc...
 """
 
@@ -34,7 +34,7 @@ MODE_DEDUP = 2
 class ThresholdMatcher(object):
     """Matchs records by computing similarity score for each pair and discard those that fall below a threshold.
 
-    This matcher does not require any training data and is perfect for when there is not too much data or if
+    This matcher does not require any training data, therefore it is perfect for when there is not too much data or if
     training data is not available.
     """
 
@@ -51,14 +51,14 @@ class ThresholdMatcher(object):
         show_progress: bool = False
     ) -> None:
         """
-        If it is given 2 datasets then it will try to match records
+        If it is given two datasets then it will try to match records
         between them. If given only one dataset then it attempts to detect
         duplicates instead.
 
         :param index: The index to divide the dataset into distinct buckets.
         :type index: sub-class of :class:`BaseIndex`
 
-        :param fields: The mapping between field name and :ref:`similarity class <Similarities>` to use
+        :param fields: The mapping between field name and :ref:`similarity class <Similarities>` to use.
         :type fields: :obj:`dict` of similarity classes
 
         :param dfa: The left dataset to match. Its index must not contain duplicates.
@@ -94,7 +94,7 @@ class ThresholdMatcher(object):
         self._score_all_pairs()
 
     def _score_pair(self, ser_a: pd.Series, ser_b: pd.Series) -> float:
-        """Calculate similarity value(0 <= sim_val <= 1) for a pair of records
+        """Calculate similarity value(0 <= sim_val <= 1) for a pair of records.
         """
         sim_vec = dict()
         for k, scls in self._fields.items():
@@ -106,7 +106,7 @@ class ThresholdMatcher(object):
             sum(v * v for v in sim_vec.values()) / len(self._fields))
 
     def _remove_lesser_matches(self):
-        """If a row already have a better match then remove the other matches
+        """If a row already have a better match then remove the other matches.
         """
         indices_a = set()
         indices_b = set()
@@ -133,7 +133,7 @@ class ThresholdMatcher(object):
             yield (idx_a, rec_a), (idx_b, rec_b)
 
     def _score_all_pairs(self):
-        """Calculate similarity value for all pairs of records
+        """Calculate similarity value for all pairs of records.
         """
         pairs = []
         valid_pairs = self._valid_pairs()
@@ -149,7 +149,7 @@ class ThresholdMatcher(object):
             )
             pairs.append((sim, idx_a, idx_b))
         self._pairs = sorted(pairs, key=operator.itemgetter(0))
-        # in dedup mode we can group more than 2 records therefore we're not dropping lesser matches
+        # in dedup mode we can group more than two records therefore we're not dropping lesser matches
         if self._mode == MODE_MATCH:
             self._remove_lesser_matches()
         self._scores = [t[0] for t in self._pairs]
@@ -223,12 +223,12 @@ class ThresholdMatcher(object):
         ]))
 
     def get_index_clusters_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list[frozenset]:
-        """Returns index clusters with similarity scores within the specified thresholds
+        """Returns index clusters with similarity scores within the specified thresholds.
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
-        :param upper_bound: The upper threshold above which, pairs won't be included, defaults to 1.
+        :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
 
         :return: A list of clusters, each cluster is a set of indices.
@@ -240,15 +240,15 @@ class ThresholdMatcher(object):
         ]
 
     def get_clusters_within_threshold(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
-        """Returns all clusters between a lower bound and upper bound
+        """Returns all clusters between a lower bound and upper bound.
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
-        :param upper_bound: The upper threshold above which, pairs won't be included, defaults to 1.
+        :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
 
-        :return: A multi-indexed frame that contains all matched clusters
+        :return: A multi-indexed frame that contains all matched clusters.
         :rtype: :class:`pandas:pandas.DataFrame`
         """
         records = []
@@ -274,15 +274,15 @@ class ThresholdMatcher(object):
             index=["cluster_idx", "pair_idx", "sim_score", "row_key"])
 
     def get_index_pairs_within_thresholds(self, lower_bound=0.7, upper_bound=1) -> list:
-        """Returns index pairs with similarity scores within specified thresholds
+        """Returns index pairs with similarity scores within specified thresholds.
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
-        :param upper_bound: The upper threshold above which, pairs won't be included, defaults to 1.
+        :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
 
-        :return: A list of pairs of indices of matching records
+        :return: A list of pairs of indices of matching records.
         :rtype: :obj:`list` of :obj:`tuple`
         """
         return [t[1:] for t in self._pairs[
@@ -290,21 +290,21 @@ class ThresholdMatcher(object):
             bisect(self._scores, upper_bound)]]
 
     def get_sample_pairs(self, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05) -> pd.DataFrame:
-        """Returns samples of record pairs for each range of similarity scores
+        """Returns samples of record pairs for each range of similarity scores.
 
         :param sample_counts: The number of samples in each range.
         :type sample_counts: :obj:`int`
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
-        :param upper_bound: The upper threshold above which, pairs won't be included, defaults to 1.
+        :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
 
         :param step: The width of each range.
         :type step: :obj:`float`
 
-        :return: A multi-indexed frame that only contain samples for each range
+        :return: A multi-indexed frame that only contain samples for each range.
         :rtype: :class:`pandas:pandas.DataFrame`
         """
         sample_records = []
@@ -333,15 +333,15 @@ class ThresholdMatcher(object):
             index=["score_range", "pair_idx", "sim_score", "row_key"])
 
     def get_all_pairs(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
-        """Returns all matching pairs between a lower bound and an upper bound
+        """Returns all matching pairs between a lower bound and an upper bound.
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
-        :param upper_bound: The upper threshold above which, pairs won't be included, defaults to 1.
+        :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
 
-        :return: A multi-indexed dataframe that only contain samples for each range
+        :return: A multi-indexed dataframe that only contain samples for each range.
         :rtype: :class:`pandas:pandas.DataFrame`
         """
         records = []
@@ -361,15 +361,15 @@ class ThresholdMatcher(object):
             index=["pair_idx", "sim_score", "row_key"])
 
     def save_pairs_to_excel(self, name: str, match_threshold: float, sample_counts: int = 5, lower_bound: float = 0.7, step: float = 0.05) -> None:
-        """Save matching pairs to an Excel file.
+        """Saves matching pairs to an Excel file.
 
         This will create an Excel file with 3 sheets:
 
-        - Sample pairs: sample pairs for each score range, similar to output of :meth:`get_sample_pairs`
+        - Sample pairs: sample pairs for each score range, similar to output of :meth:`get_sample_pairs`.
 
-        - All pairs: all pairs that score higher than **lower_bound** ordered by the similarity score
+        - All pairs: all pairs that score higher than **lower_bound** ordered by the similarity score.
 
-        - Decision: selected threshold and how many pairs are counted as matched
+        - Decision: selected threshold and how many pairs are counted as matched.
 
         :param name: The excel file to save to.
         :type name: :obj:`str`
@@ -380,7 +380,7 @@ class ThresholdMatcher(object):
         :param sample_counts: The number of samples per score range in the "Sample pairs" sheet.
         :type sample_counts: :obj:`int`
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
         :param step: The width of each range in the "Sample pairs" sheet.
@@ -410,13 +410,13 @@ class ThresholdMatcher(object):
     def save_clusters_to_excel(self, name: str, match_threshold: float, lower_bound: float = 0.7) -> None:
         """Save matched clusters to an Excel file.
 
-        This will create an Excel file with 2 sheets:
+        This will create an Excel file with two sheets:
 
-        - All clusters: all clusters that score higher than lower bound ordered by score
+        - All clusters: all clusters that score higher than lower bound ordered by score.
 
-        - Decision: selected threshold and how many pairs are counted as matched
+        - Decision: selected threshold and how many pairs are counted as matched.
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
         :param name: The excel file to save to.
@@ -425,7 +425,7 @@ class ThresholdMatcher(object):
         :param match_threshold: The score above which a pair is considered a match.
         :type match_threshold: :obj:`float`
 
-        :param lower_bound: The lower threshold below which, pairs won't be included, defaults to 0.7.
+        :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
         :rtype: :obj:`None`
@@ -439,7 +439,7 @@ class ThresholdMatcher(object):
             ).to_excel(writer, sheet_name="Decision")
 
     def print_decision(self, match_threshold: float) -> None:
-        """Print number and percentage of matched pairs for selected threshold
+        """Prints number and percentage of matched pairs for selected threshold.
 
         :param match_threshold: The score above which a pair is considered a match.
         :type match_threshold: :obj:`float`

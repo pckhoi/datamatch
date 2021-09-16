@@ -2,17 +2,17 @@
 A pairer produces pairs of records for matching. Most users should never need
 to touch a pairer but this is exposed anyway for the sake of customization.
 
-There are 2 pairers corresponding to 2 strategies:
+There are two pairers corresponding to two strategies:
 
-- | :class:`MatchPairer`: Takes in 2 datasets and produces pairs of records
-  | such that each pair contain 1 record from 1 dataset and 1 record from
+- | :class:`MatchPairer`: Takes in two datasets and produces pairs of records
+  | such that each pair contain one record from one dataset and one record from
   | the other dataset. This pairer is utilized when :class:`ThresholdMatcher`
-  | is given 2 datasets. It is useful for matching records between
-  | 2 datasets.
+  | is given two datasets. It is useful for matching records between
+  | two datasets.
 
-- | :class:`DeduplicatePairer`: Takes in 1 dataset and produces pairs of records
+- | :class:`DeduplicatePairer`: Takes in one dataset and produces pairs of records
   | each having only records from the input dataset. This pairer is utilized
-  | when :class:`ThresholdMatcher` is given only 1 dataset. It is
+  | when :class:`ThresholdMatcher` is given only one dataset. It is
   | useful for deduplication tasks.
 """
 
@@ -26,7 +26,7 @@ from .indices import BaseIndex
 
 
 class BasePairer(ABC):
-    """Abstract base class for all pairer classes
+    """Abstract base class for all pairer classes.
 
     Sub-class must implement :meth:`frame_a`, :meth:`frame_b`, and :meth:`pairs`.
 
@@ -38,7 +38,7 @@ class BasePairer(ABC):
     @property
     @abstractmethod
     def frame_a(self) -> pd.DataFrame:
-        """Returns the left set of records
+        """Returns the left set of records.
 
         :rtype: :class:`pandas:pandas.DataFrame`
         """
@@ -47,7 +47,7 @@ class BasePairer(ABC):
     @property
     @abstractmethod
     def frame_b(self) -> pd.DataFrame:
-        """Returns the right set of records
+        """Returns the right set of records.
 
         :rtype: :class:`pandas:pandas.DataFrame`
         """
@@ -55,10 +55,10 @@ class BasePairer(ABC):
 
     @abstractmethod
     def pairs(self) -> Iterator:
-        """Returns an iterator over pairs of records that should be compared
+        """Returns an iterator over pairs of records that should be compared.
 
         Each pair is a tuple of left record and right record. Each record is a tuple
-        of 2 elements: the row index and the row data which is a :class:`pandas:pandas.Series`.
+        of two elements: the row index and the row data which is a :class:`pandas:pandas.Series`.
 
         :rtype: :ref:`Iterator <python:typeiter>`
         """
@@ -66,18 +66,18 @@ class BasePairer(ABC):
 
 
 class MatchPairer(BasePairer):
-    """Pair records from 2 frames using the provided index
+    """Pairs records from two frames using the provided index.
     """
 
     def __init__(self, dfa: pd.DataFrame, dfb: pd.DataFrame, index: Type[BaseIndex]) -> None:
         """
-        :param dfa: The left dataset
+        :param dfa: The left dataset.
         :type dfa: :class:`pandas:pandas.DataFrame`
 
-        :param dfb: The right dataset
+        :param dfb: The right dataset.
         :type dfb: :class:`pandas:pandas.DataFrame`
 
-        :param index: The index to divide datasets into buckets
+        :param index: The index to divide datasets into buckets.
         :type index: sub-class of :class:`BaseIndex`
         """
         self._index = index
@@ -129,7 +129,7 @@ class MatchPairer(BasePairer):
 
 
 class DeduplicatePairer(BasePairer):
-    """Pairs records from a single frame to deduplicate
+    """Pairs records from a single frame for deduplication.
 
     As this class is only initialized with a single frame, both
     `frame_a` and `frame_b` returns this same frame.
@@ -137,10 +137,10 @@ class DeduplicatePairer(BasePairer):
 
     def __init__(self, df: pd.DataFrame, index: Type[BaseIndex]) -> None:
         """
-        :param df: The dataset to deduplicate
+        :param df: The dataset to deduplicate.
         :type df: :class:`pandas:pandas.DataFrame`
 
-        :param index: The index to divide datasets into buckets
+        :param index: The index to divide datasets into buckets.
         :type index: sub-class of :class:`BaseIndex`
         """
         self._index = index

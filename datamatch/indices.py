@@ -1,6 +1,6 @@
 """
-An index divides the data up into one or more buckets. Only records in the same bucket are matched against each other.
-When used correctly this decreases the number of pairs to compare and speeds up the matching process significantly.
+An index divides the data up into one or more buckets. Only records in the same bucket are then matched against each other.
+When used correctly, indexing decreases the number of pairs to compare and speeds up the matching process significantly.
 """
 
 import operator
@@ -28,10 +28,10 @@ class BaseIndex(ABC):
     def _key_ind_map(self, df: pd.DataFrame) -> dict:
         """Returns a mapping between bucket keys and row indices.
 
-        :param df: the data to index
+        :param df: the data to index.
         :type df: :class:`pandas:pandas.DataFrame`
 
-        :return: a mapping between bucket key and all row indices that belong
+        :return: A mapping between bucket key and all row indices that belong
             to the bucket. Key could be anything hashable but the value must always
             be a list even if there is only one row.
         :rtype: :obj:`dict`
@@ -39,12 +39,12 @@ class BaseIndex(ABC):
         raise NotImplementedError()
 
     def keys(self, df: pd.DataFrame) -> set:
-        """Returns a set of keys that could be used to retrieve buckets
+        """Returns a set of keys that could be used to retrieve buckets.
 
-        :param df: the data to index
+        :param df: the data to index.
         :type df: :class:`pandas:pandas.DataFrame`
 
-        :return: a set of bucket keys
+        :return: A set of bucket keys.
         :rtype: :obj:`set`
         """
         key_inds = self._key_ind_map(df)
@@ -52,15 +52,15 @@ class BaseIndex(ABC):
         return set(key_inds.keys())
 
     def bucket(self, df: pd.DataFrame, key: any) -> pd.DataFrame:
-        """Retrieves a bucket given the original data and a bucket key
+        """Retrieves a bucket given the original data and a bucket key.
 
-        :param df: the data to index
+        :param df: the data to index.
         :type df: :class:`pandas:pandas.DataFrame`
 
-        :param key: one of the keys returned from :meth:`BaseIndex.keys`
+        :param key: one of the keys returned from :meth:`BaseIndex.keys`.
         :type key: any
 
-        :return: rows in bucket
+        :return: Rows in bucket.
         :rtype: :class:`pandas:pandas.DataFrame`
         """
         for frame, key_inds in self._dfs:
@@ -93,7 +93,7 @@ class ColumnsIndex(BaseIndex):
 
     def __init__(self, cols: str or list[str]) -> None:
         """
-        :param cols: single column name or list of column names to index
+        :param cols: single column name or list of column names to index.
         :type cols: :obj:`str` or :obj:`list` of :obj:`str`
         """
         super().__init__()
@@ -115,9 +115,9 @@ class ColumnsIndex(BaseIndex):
 
 
 class MultiIndex(BaseIndex):
-    """Creates bucket keys by combining bucket keys from 2 or more indices.
+    """Creates bucket keys by combining bucket keys from two or more indices.
 
-    This has 2 modes of operation:
+    This has two modes of operation:
 
     - When **combine_keys** is `False`: the key sets of each index are concatenated together, this is like OR-ing the keys.
     - When **combine_keys** is `True`: the final key set is the cartesian product of all key sets, this is like AND-ing the keys.
@@ -125,10 +125,10 @@ class MultiIndex(BaseIndex):
 
     def __init__(self, indices: list[Type[BaseIndex]], combine_keys: bool = False) -> None:
         """
-        :param indices: list of indices to combine
+        :param indices: list of indices to combine.
         :type indices: :obj:`list` of :class:`BaseIndex` subclass
 
-        :param combine_keys: whether the final key set should be the cartesian product of all key sets, defaults to `False`
+        :param combine_keys: whether the final key set should be the cartesian product of all key sets, defaults to `False`.
         :type combine_keys: :obj:`bool`
         """
         super().__init__()
