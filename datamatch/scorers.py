@@ -25,13 +25,13 @@ class BaseScorer(ABC):
     def score(self, a: pd.Series, b: pd.Series) -> float:
         """Returns similarity score (0 <= sim <= 1) for a pair of records.
 
-        :param a: the left record.
+        :param a: The left record.
         :type a: :class:`pandas:pandas.Series`
 
-        :param b: the right record.
+        :param b: The right record.
         :type b: :class:`pandas:pandas.Series`
 
-        :return: similarity score.
+        :return: Similarity score.
         :rtype: :obj:`float`
         """
         raise NotImplementedError()
@@ -66,9 +66,9 @@ class SimSumScorer(BaseScorer):
 
 
 class AbsoluteScorer(BaseScorer):
-    """Returns an arbitrary score if both records has the same value for a column.
+    """Returns an arbitrary score if both records have the same value for a column.
 
-    If the values are not equal or is null then this scorer will raise :class:`RefuseToScoreException`.
+    If the values are not equal or one of them is null then this scorer will raise :class:`RefuseToScoreException`.
     Therefore, this class should never be used on its own but always wrapped in either
     :class:`MaxScorer` or :class:`MinScorer`.
     """
@@ -103,7 +103,7 @@ class MaxScorer(BaseScorer):
 
     def __init__(self, scorers: list[Type[BaseScorer]]) -> None:
         """
-        :param scorers: The scorer classes to use.
+        :param scorers: The children classes.
         :type scorers: list of :class:`BaseScorer` subclasses.
         """
         self._scorers = scorers
@@ -133,7 +133,7 @@ class MinScorer(BaseScorer):
 
     def __init__(self, scorers: list[Type[BaseScorer]]) -> None:
         """
-        :param scorers: The scorer classes to use.
+        :param scorers: The children classes.
         :type scorers: list of :class:`BaseScorer` subclasses.
         """
         self._scorers = scorers
