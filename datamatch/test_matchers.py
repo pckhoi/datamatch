@@ -4,10 +4,11 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from .indices import NoopIndex
-from .matchers import ThresholdMatcher
-from .similarities import JaroWinklerSimilarity, StringSimilarity
-from .variators import Swap
+from datamatch.indices import NoopIndex
+from datamatch.matchers import ThresholdMatcher
+from datamatch.scorers import AbsoluteScorer, MaxScorer, SimSumScorer
+from datamatch.similarities import JaroWinklerSimilarity, StringSimilarity
+from datamatch.variators import Swap
 
 
 class TestThresholdMatcher(unittest.TestCase):
@@ -185,4 +186,32 @@ class TestThresholdMatcher(unittest.TestCase):
         self.assertEqual(
             matcher.get_index_pairs_within_thresholds(),
             [(0, 3), (1, 4), (2, 4), (2, 5)]
+        )
+
+    def test_scorer(self):
+        columns = ['first_name', 'attract_id']
+        df = pd.DataFrame([
+            ['john', 5],
+            ['jim', 5],
+            ['ted', 3],
+            ['tedd', 2]
+        ], columns=columns)
+
+        matcher = ThresholdMatcher(NoopIndex(), MaxScorer([
+            AbsoluteScorer('attract_id', 1),
+            SimSumScorer({
+                'first_name': JaroWinklerSimilarity()
+            })
+        ]), df)
+
+        self.assertEqual(
+            matcher.get_clusters_within_threshold().to_string(),
+            '\n'.join([
+                '                                       first_name  attract_id',
+                'cluster_idx pair_idx sim_score row_key                       ',
+                '0           0        1.000000  0             john           5',
+                '                               1              jim           5',
+                '1           0        0.941667  2              ted           3',
+                '                               3             tedd           2',
+            ]),
         )

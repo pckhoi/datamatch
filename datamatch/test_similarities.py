@@ -1,7 +1,7 @@
 import unittest
 from datetime import date
 
-from .similarities import (
+from datamatch.similarities import (
     StringSimilarity, DateSimilarity, JaroWinklerSimilarity, AbsoluteNumericalSimilarity, RelativeNumericalSimilarity
 )
 

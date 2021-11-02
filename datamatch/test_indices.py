@@ -3,7 +3,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import itertools
 
-from .indices import MultiIndex, NoopIndex, ColumnsIndex
+from datamatch.indices import MultiIndex, NoopIndex, ColumnsIndex
 
 
 class BaseIndexTestCase(unittest.TestCase):

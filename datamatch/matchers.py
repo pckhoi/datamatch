@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
+from .scorers import BaseScorer, SimSumScorer
 from .indices import BaseIndex
 from .pairers import DeduplicatePairer, MatchPairer
 from .filters import BaseFilter
@@ -43,7 +44,7 @@ class ThresholdMatcher(object):
     def __init__(
         self,
         index: Type[BaseIndex],
-        fields: dict,
+        scorer: dict or Type[BaseScorer],
         dfa: pd.DataFrame,
         dfb: pd.DataFrame or None = None,
         variator: Type[Variator] or None = None,
@@ -58,8 +59,9 @@ class ThresholdMatcher(object):
         :param index: The index to divide the dataset into distinct buckets.
         :type index: sub-class of :class:`BaseIndex`
 
-        :param fields: The mapping between field name and :ref:`similarity class <Similarities>` to use.
-        :type fields: :obj:`dict` of similarity classes
+        :param scorer: The scorer class to score each pair. If it is a dict then create
+            a :class:`SimSumScorer` with that dict and use it.
+        :type scorer: sub-class of :class:`BaseScorer` or :obj:`dict` of similarity classes
 
         :param dfa: The left dataset to match. Its index must not contain duplicates.
         :type dfa: :class:`pandas:pandas.DataFrame`
@@ -84,7 +86,10 @@ class ThresholdMatcher(object):
         else:
             self._pairer = MatchPairer(dfa, dfb, index)
             self._mode = MODE_MATCH
-        self._fields = fields
+        if type(scorer) is dict:
+            self._scorer = SimSumScorer(scorer)
+        else:
+            self._scorer = scorer
         if variator is None:
             self._variator = Variator()
         else:
@@ -92,18 +97,6 @@ class ThresholdMatcher(object):
         self._filters = filters
         self._show_progress = show_progress
         self._score_all_pairs()
-
-    def _score_pair(self, ser_a: pd.Series, ser_b: pd.Series) -> float:
-        """Calculate similarity value(0 <= sim_val <= 1) for a pair of records.
-        """
-        sim_vec = dict()
-        for k, scls in self._fields.items():
-            if pd.isnull(ser_a[k]) or pd.isnull(ser_b[k]):
-                sim_vec[k] = 0
-            else:
-                sim_vec[k] = scls.sim(ser_a[k], ser_b[k])
-        return math.sqrt(
-            sum(v * v for v in sim_vec.values()) / len(self._fields))
 
     def _remove_lesser_matches(self):
         """If a row already have a better match then remove the other matches.
@@ -141,7 +134,7 @@ class ThresholdMatcher(object):
             valid_pairs = tqdm(valid_pairs, desc='scoring pairs')
         for (idx_a, rec_a), (idx_b, rec_b) in valid_pairs:
             sim = max(
-                self._score_pair(ser_a, ser_b)
+                self._scorer.score(ser_a, ser_b)
                 for ser_a, ser_b in itertools.product(
                     self._variator.variations(rec_a),
                     self._variator.variations(rec_b)

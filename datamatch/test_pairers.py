@@ -3,8 +3,8 @@ from unittest import TestCase
 import pandas as pd
 from pandas.testing import assert_series_equal, assert_frame_equal
 
-from .pairers import MatchPairer, DeduplicatePairer
-from .indices import ColumnsIndex
+from datamatch.pairers import MatchPairer, DeduplicatePairer
+from datamatch.indices import ColumnsIndex
 
 
 class BasePairerTestCase(TestCase):

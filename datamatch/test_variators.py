@@ -4,7 +4,7 @@ import itertools
 import pandas as pd
 from pandas.testing import assert_series_equal
 
-from .variators import Variator, Swap
+from datamatch.variators import Variator, Swap
 
 
 class BaseVariatorTestCase(TestCase):
