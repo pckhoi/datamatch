@@ -37,6 +37,7 @@ most data matching use cases.
 
     reference/matchers
     reference/indices
+    reference/scorers
     reference/similarities
     reference/filters
     reference/variators
