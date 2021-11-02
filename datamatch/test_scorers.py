@@ -53,6 +53,20 @@ class AbsoluteScorerTestCase(TestCase):
             pd.Series([1234], index=['attract_id']),
         ))
 
+    def test_ignore_key_error(self):
+        series_a = pd.Series([1], index=['a'])
+        series_b = pd.Series([2], index=['a'])
+        self.assertRaises(
+            KeyError,
+            lambda: AbsoluteScorer('b', 1).score(series_a, series_b)
+        )
+        self.assertRaises(
+            RefuseToScoreException,
+            lambda: AbsoluteScorer(
+                'b', 1, ignore_key_error=True
+            ).score(series_a, series_b)
+        )
+
 
 class MaxScorerTestCase(TestCase):
     def test_score(self):

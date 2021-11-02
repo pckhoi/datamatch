@@ -69,6 +69,14 @@ class TestColumnsIndex(BaseIndexTestCase):
             pd.DataFrame([[3, 4]], index=["c"], columns=cols)
         )
 
+    def test_ignore_key_error(self):
+        df = pd.DataFrame(
+            [[1, 2], [3, 4]], columns=['a', 'b']
+        )
+        self.assertRaises(KeyError, lambda: ColumnsIndex('c').keys(df))
+        self.assertEqual(ColumnsIndex(
+            'c', ignore_key_error=True).keys(df), set())
+
 
 class MultiIndexTestCase(BaseIndexTestCase):
     def test_index(self):

@@ -18,6 +18,18 @@ class DissimilarFilterTestCase(TestCase):
             pd.Series(['slidell pd', '456'], index=index)
         ))
 
+    def test_ignore_key_error(self):
+        index = ['agency', 'uid']
+        series_a = pd.Series(['slidell pd', '123'], index=index)
+        series_b = pd.Series(['slidell pd', '456'], index=index)
+        self.assertRaises(
+            KeyError,
+            lambda: DissimilarFilter('first').valid(series_a, series_b)
+        )
+        self.assertTrue(DissimilarFilter(
+            'first', ignore_key_error=True
+        ).valid(series_a, series_b))
+
 
 class NonOverlappingFilterTestCase(TestCase):
     def test_valid(self):

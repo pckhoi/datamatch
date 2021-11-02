@@ -34,13 +34,18 @@ class DissimilarFilter(BaseFilter):
     """Eliminates pairs with the same value for a specific field.
     """
 
-    def __init__(self, col: str) -> None:
+    def __init__(self, col: str, ignore_key_error: bool = False) -> None:
         """
-        :param col: the column to check.
+        :param col: The column to check.
         :type col: :obj:`str`
+
+        :param ignore_key_error: When set to True, if the column is not found, acts like a no-op
+            filter instead of raising KeyError.
+        :param ignore_key_error: :obj:`bool`
         """
         super().__init__()
         self._col = col
+        self._ignore_key_error = ignore_key_error
 
     def valid(self, a: pd.Series, b: pd.Series) -> bool:
         """
@@ -48,8 +53,13 @@ class DissimilarFilter(BaseFilter):
 
         :meta private:
         """
-        val_a = a[self._col]
-        val_b = b[self._col]
+        try:
+            val_a = a[self._col]
+            val_b = b[self._col]
+        except KeyError:
+            if self._ignore_key_error:
+                return True
+            raise
         if pd.isnull(val_a) or pd.isnull(val_b):
             return True
         return val_a != val_b

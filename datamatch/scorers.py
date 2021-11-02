@@ -73,16 +73,21 @@ class AbsoluteScorer(BaseScorer):
     :class:`MaxScorer` or :class:`MinScorer`.
     """
 
-    def __init__(self, column_name: str, score: float) -> None:
+    def __init__(self, column_name: str, score: float, ignore_key_error: bool = False) -> None:
         """
         :param column_name: The column to compare.
         :type column_name: :obj:`str`
 
         :param score: The score to return.
         :type score: :obj:`float`
+
+        :param ignore_key_error: When set to True, if the column does not exist in either record,
+            raise RefuseToScoreException (delegate to a parent scorer) instead of KeyError.
+        :type ignore_key_error: :obj:`bool`
         """
         self._column = column_name
         self._default_score = score
+        self._ignore_key_error = ignore_key_error
 
     def score(self, a: pd.Series, b: pd.Series) -> float:
         """
@@ -90,10 +95,17 @@ class AbsoluteScorer(BaseScorer):
 
         :meta private:
         """
-        if pd.isnull(a[self._column]) or pd.isnull(b[self._column]):
-            raise RefuseToScoreException("one of the values is null")
-        elif a[self._column] == b[self._column]:
-            return self._default_score
+        try:
+            if pd.isnull(a[self._column]) or pd.isnull(b[self._column]):
+                raise RefuseToScoreException("one of the values is null")
+            elif a[self._column] == b[self._column]:
+                return self._default_score
+        except KeyError:
+            if self._ignore_key_error:
+                raise RefuseToScoreException(
+                    "column does not exist in one of the record")
+            else:
+                raise
         raise RefuseToScoreException("values are not equal")
 
 

@@ -91,12 +91,17 @@ class ColumnsIndex(BaseIndex):
     """Split data into multiple buckets based on one or more columns.
     """
 
-    def __init__(self, cols: str or list[str]) -> None:
+    def __init__(self, cols: str or list[str], ignore_key_error: bool = False) -> None:
         """
         :param cols: single column name or list of column names to index.
         :type cols: :obj:`str` or :obj:`list` of :obj:`str`
+
+        :param ignore_key_error: When set to True, a column does not exist in the frame, don't produce
+            any bucket instead of raising a KeyError.
+        :type ignore_key_error: :obj:`bool`
         """
         super().__init__()
+        self._ignore_key_error = ignore_key_error
         if type(cols) is str:
             self._cols = [cols]
         else:
@@ -104,13 +109,17 @@ class ColumnsIndex(BaseIndex):
 
     def _key_ind_map(self, df: pd.DataFrame) -> dict:
         result = dict()
-        for idx, row in df.iterrows():
-            key = tuple(
-                row[col] for col in self._cols
-            )
-            result.setdefault(key, list()).append(idx)
-        for l in result.values():
-            l.sort()
+        try:
+            for idx, row in df.iterrows():
+                key = tuple(
+                    row[col] for col in self._cols
+                )
+                result.setdefault(key, list()).append(idx)
+            for l in result.values():
+                l.sort()
+        except KeyError:
+            if not self._ignore_key_error:
+                raise
         return result
 
 
