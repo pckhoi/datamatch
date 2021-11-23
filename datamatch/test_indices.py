@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+from pandas.core.indexes.range import RangeIndex
 from pandas.testing import assert_frame_equal
 import itertools
 
@@ -76,6 +77,64 @@ class TestColumnsIndex(BaseIndexTestCase):
         self.assertRaises(KeyError, lambda: ColumnsIndex('c').keys(df))
         self.assertEqual(ColumnsIndex(
             'c', ignore_key_error=True).keys(df), set())
+
+    def test_index_elements(self):
+        cols = ['col1', 'col2']
+        df = pd.DataFrame(
+            [
+                [['a', 'b'], 'q'],
+                [['c'], 'w'],
+                [['b'], 'e'],
+            ],
+            index=RangeIndex(start=0, stop=3),
+            columns=cols
+        )
+        idx = ColumnsIndex('col1', index_elements=True)
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([('a',), ('b',), ('c',)]))
+        assert_frame_equal(
+            idx.bucket(df, ('a',)),
+            pd.DataFrame([
+                [['a', 'b'], 'q']
+            ], index=[0], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, ('b',)),
+            pd.DataFrame([
+                [['a', 'b'], 'q'],
+                [['b'], 'e'],
+            ], index=[0, 2], columns=cols)
+        )
+
+    def test_index_elements_multi_columns(self):
+        cols = ['col1', 'col2', 'col3']
+        df = pd.DataFrame(
+            [
+                [['a', 'b'], 'q', [1]],
+                [['c'], 'w', [2, 3]],
+                [['b'], 'e', [1]],
+            ],
+            index=RangeIndex(start=0, stop=3),
+            columns=cols
+        )
+        idx = ColumnsIndex(['col1', 'col3'], index_elements=True)
+        keys = idx.keys(df)
+        self.assertEqual(keys, set([
+            ('c', 2), ('a', 1), ('b', 1), ('b', 1), ('c', 3)
+        ]))
+        assert_frame_equal(
+            idx.bucket(df, ('a', 1)),
+            pd.DataFrame([
+                [['a', 'b'], 'q', [1]],
+            ], index=[0], columns=cols)
+        )
+        assert_frame_equal(
+            idx.bucket(df, ('b', 1)),
+            pd.DataFrame([
+                [['a', 'b'], 'q', [1]],
+                [['b'], 'e', [1]],
+            ], index=[0, 2], columns=cols)
+        )
 
 
 class MultiIndexTestCase(BaseIndexTestCase):

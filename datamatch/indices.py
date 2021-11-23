@@ -6,6 +6,7 @@ When used correctly, indexing decreases the number of pairs to compare and speed
 import operator
 import functools
 import itertools
+from collections.abc import Iterable
 from typing import Type
 from abc import ABC, abstractmethod
 
@@ -91,7 +92,7 @@ class ColumnsIndex(BaseIndex):
     """Split data into multiple buckets based on one or more columns.
     """
 
-    def __init__(self, cols: str or list[str], ignore_key_error: bool = False) -> None:
+    def __init__(self, cols: str or list[str], ignore_key_error: bool = False, index_elements: bool = False) -> None:
         """
         :param cols: single column name or list of column names to index.
         :type cols: :obj:`str` or :obj:`list` of :obj:`str`
@@ -99,9 +100,14 @@ class ColumnsIndex(BaseIndex):
         :param ignore_key_error: When set to True, a column does not exist in the frame, don't produce
             any bucket instead of raising a KeyError.
         :type ignore_key_error: :obj:`bool`
+
+        :param index_elements: Set this to True when each value in the column to index is a list, and
+            you want to index using the list elements.
+        :type index_elements: :obj:`bool`
         """
         super().__init__()
         self._ignore_key_error = ignore_key_error
+        self._index_elements = index_elements
         if type(cols) is str:
             self._cols = [cols]
         else:
@@ -111,10 +117,19 @@ class ColumnsIndex(BaseIndex):
         result = dict()
         try:
             for idx, row in df.iterrows():
-                key = tuple(
-                    row[col] for col in self._cols
-                )
-                result.setdefault(key, list()).append(idx)
+                if self._index_elements:
+                    for col in self._cols:
+                        if not isinstance(row[col], Iterable):
+                            raise ValueError('column %s at row %s is not iterable: %s' % (
+                                col, row.name, row[col]
+                            ))
+                    for key in itertools.product(*list(row[col] for col in self._cols)):
+                        result.setdefault(key, list()).append(idx)
+                else:
+                    key = tuple(
+                        row[col] for col in self._cols
+                    )
+                    result.setdefault(key, list()).append(idx)
             for l in result.values():
                 l.sort()
         except KeyError:
