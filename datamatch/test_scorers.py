@@ -3,8 +3,8 @@ from unittest import TestCase
 import pandas as pd
 import numpy as np
 
-from datamatch.similarities import AbsoluteNumericalSimilarity, JaroWinklerSimilarity
-from datamatch.scorers import RefuseToScoreException, SimSumScorer, AbsoluteScorer, MinScorer, MaxScorer
+from datamatch.similarities import AbsoluteNumericalSimilarity, JaroWinklerSimilarity, RelativeNumericalSimilarity
+from datamatch.scorers import AlterScorer, RefuseToScoreException, SimSumScorer, AbsoluteScorer, MinScorer, MaxScorer
 
 
 class SimSumScorerTestCase(TestCase):
@@ -115,4 +115,41 @@ class MinScorerTestCase(TestCase):
                 pd.Series(['jim', 4], index=columns),
             ),
             0.575
+        )
+
+
+class AlterScorerTestCase(TestCase):
+    def test_score(self):
+        scorer = AlterScorer(
+            scorer=SimSumScorer({
+                'name': JaroWinklerSimilarity(),
+                'age': RelativeNumericalSimilarity(100)
+            }),
+            values=pd.Series(
+                [1, 2, 1, 3],
+                index=[1, 2, 3, 4]
+            ),
+            alter=lambda x: x/2
+        )
+        columns = ['name', 'age']
+        self.assertEqual(
+            scorer.score(
+                pd.Series(['john', 20], index=columns, name=2),
+                pd.Series(['jim', 21], index=columns, name=4)
+            ),
+            0.7866557310723826
+        )
+        self.assertEqual(
+            scorer.score(
+                pd.Series(['john', 20], index=columns, name=1),
+                pd.Series(['jim', 21], index=columns, name=3)
+            ),
+            0.3933278655361913
+        )
+        self.assertEqual(
+            scorer.score(
+                pd.Series(['john', 20], index=columns, name=5),
+                pd.Series(['jim', 21], index=columns, name=6)
+            ),
+            0.7866557310723826
         )

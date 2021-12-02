@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-from .scorers import BaseScorer, SimSumScorer
+from .scorers import BaseScorer, ScoreFunc, SimSumScorer
 from .indices import BaseIndex
 from .pairers import DeduplicatePairer, MatchPairer
 from .filters import BaseFilter
@@ -44,7 +44,7 @@ class ThresholdMatcher(object):
     def __init__(
         self,
         index: Type[BaseIndex],
-        scorer: dict or Type[BaseScorer],
+        scorer: dict or Type[BaseScorer] or ScoreFunc,
         dfa: pd.DataFrame,
         dfb: pd.DataFrame or None = None,
         variator: Type[Variator] or None = None,
@@ -61,7 +61,7 @@ class ThresholdMatcher(object):
 
         :param scorer: The scorer class to score each pair. If it is a dict then create
             a :class:`SimSumScorer` with that dict and use it.
-        :type scorer: sub-class of :class:`BaseScorer` or :obj:`dict` of similarity classes
+        :type scorer: :obj:`ScoreFunc` or sub-class of :class:`BaseScorer` or :obj:`dict` of similarity classes
 
         :param dfa: The left dataset to match. Its index must not contain duplicates.
         :type dfa: :class:`pandas:pandas.DataFrame`

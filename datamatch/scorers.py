@@ -3,8 +3,9 @@ A scorer decide how the similarity score for each pair is calculated.
 """
 
 from abc import ABC, abstractmethod
+import inspect
 import math
-from typing import Type
+from typing import Callable, Type
 
 import pandas as pd
 
@@ -13,6 +14,17 @@ class RefuseToScoreException(Exception):
     """Raise to delegate scoring to a parent object
     """
     pass
+
+
+ScoreFunc = Callable[[pd.Series, pd.Series], float]
+
+
+def is_score_func(func: Callable) -> bool:
+    if type(func) != function:
+        return False
+    params = list(inspect.signature(func).parameters.values())
+    if len(params) != 2:
+        return False
 
 
 class BaseScorer(ABC):
@@ -167,3 +179,37 @@ class MinScorer(BaseScorer):
         if val is None:
             raise RefuseToScoreException("all children refuse to score")
         return val
+
+
+class AlterScorer(BaseScorer):
+    """Modifies the score for pairs with the same given values
+    """
+
+    def __init__(self, scorer: Type[BaseScorer], values: pd.Series, alter: Callable[[int], int]) -> None:
+        """
+        :param scorer: The wrapped scorer.
+        :type scorer: :class:`BaseScorer` subclass.
+        :param values:
+            for each pair, if both rows have index in this series and their values are the same then
+            call `alter` to modify the final score.
+        :type values: :class:`pandas:pandas.Series`
+        :param alter: callback to modify the final score.
+        :type alter: Callable[[int], int]
+        """
+        self._scorer = scorer
+        self._values = values
+        self._alter = alter
+
+    def score(self, a: pd.Series, b: pd.Series) -> float:
+        """
+        .. hiding method's docstring
+
+        :meta private:
+        """
+        score = self._scorer.score(a, b)
+        try:
+            if self._values[a.name] == self._values[b.name]:
+                return self._alter(score)
+        except KeyError:
+            pass
+        return score
