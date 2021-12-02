@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-from .scorers import BaseScorer, ScoreFunc, SimSumScorer
+from .scorers import BaseScorer, FuncScorer, ScoreFunc, SimSumScorer
 from .indices import BaseIndex
 from .pairers import DeduplicatePairer, MatchPairer
 from .filters import BaseFilter
@@ -57,11 +57,11 @@ class ThresholdMatcher(object):
         duplicates instead.
 
         :param index: The index to divide the dataset into distinct buckets.
-        :type index: sub-class of :class:`BaseIndex`
+        :type index: sub-class of :class:`datamatch.indices.BaseIndex`
 
         :param scorer: The scorer class to score each pair. If it is a dict then create
-            a :class:`SimSumScorer` with that dict and use it.
-        :type scorer: :obj:`ScoreFunc` or sub-class of :class:`BaseScorer` or :obj:`dict` of similarity classes
+            a :class:`datamatch.scorers.SimSumScorer` with that dict and use it.
+        :type scorer: Callable[[:class:`pandas:pandas.Series`, :class:`pandas:pandas.Series`], :obj:`float`] or sub-class of :class:`datamatch.scorers.BaseScorer` or :obj:`dict` of similarity classes
 
         :param dfa: The left dataset to match. Its index must not contain duplicates.
         :type dfa: :class:`pandas:pandas.DataFrame`
@@ -72,10 +72,10 @@ class ThresholdMatcher(object):
         :type dfb: :class:`pandas:pandas.DataFrame`, optional
 
         :param variator: The :ref:`variator <variators>` to use.
-        :type variator: sub-class of :class:`Variator`, optional
+        :type variator: sub-class of :class:`datamatch.variators.Variator`, optional
 
         :param filters: The list of :ref:`filters` to use.
-        :type filters: :obj:`list` of sub-class of :class:`BaseFilter`, optional
+        :type filters: :obj:`list` of sub-class of :class:`datamatch.filters.BaseFilter`, optional
 
         :param show_progress: Prints a `tqdm <https://github.com/tqdm/tqdm>`_ progress bar to console during matching, defaults to False.
         :type show_progress: :obj:`bool`, optional
@@ -88,6 +88,8 @@ class ThresholdMatcher(object):
             self._mode = MODE_MATCH
         if type(scorer) is dict:
             self._scorer = SimSumScorer(scorer)
+        elif type(scorer).__name__ == 'function':
+            self._scorer = FuncScorer(scorer)
         else:
             self._scorer = scorer
         if variator is None:

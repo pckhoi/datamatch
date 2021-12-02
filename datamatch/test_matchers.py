@@ -4,7 +4,7 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from datamatch.indices import NoopIndex
+from datamatch.indices import ColumnsIndex, NoopIndex
 from datamatch.matchers import ThresholdMatcher
 from datamatch.scorers import AbsoluteScorer, MaxScorer, SimSumScorer
 from datamatch.similarities import JaroWinklerSimilarity, StringSimilarity
@@ -214,4 +214,31 @@ class TestThresholdMatcher(unittest.TestCase):
                 '1           0        0.941667  2              ted           3',
                 '                               3             tedd           2',
             ]),
+        )
+
+    def test_func_scorer(self):
+        self.maxDiff = None
+        df = pd.DataFrame([
+            ['j', 'john', 20],
+            ['j', 'jim', 20],
+            ['b', 'bill', 19],
+            ['b', 'bob', 21]
+        ], columns=['fc', 'name', 'age'])
+
+        matcher = ThresholdMatcher(
+            index=ColumnsIndex('fc'),
+            scorer=lambda a, b: 1.0 if a.age == b.age else 0.8,
+            dfa=df
+        )
+
+        self.assertEqual(
+            matcher.get_clusters_within_threshold().to_string(),
+            '\n'.join([
+                '                                       fc  name  age',
+                'cluster_idx pair_idx sim_score row_key              ',
+                '0           0        1.0       0        j  john   20',
+                '                               1        j   jim   20',
+                '1           0        0.8       2        b  bill   19',
+                '                               3        b   bob   21',
+            ])
         )

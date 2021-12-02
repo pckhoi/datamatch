@@ -78,7 +78,7 @@ class MatchPairer(BasePairer):
         :type dfb: :class:`pandas:pandas.DataFrame`
 
         :param index: The index to divide datasets into buckets.
-        :type index: sub-class of :class:`BaseIndex`
+        :type index: sub-class of :class:`datamatch.indices.BaseIndex`
         """
         self._index = index
         if dfa.index.duplicated().any() or dfb.index.duplicated().any():
@@ -141,7 +141,7 @@ class DeduplicatePairer(BasePairer):
         :type df: :class:`pandas:pandas.DataFrame`
 
         :param index: The index to divide datasets into buckets.
-        :type index: sub-class of :class:`BaseIndex`
+        :type index: sub-class of :class:`datamatch.indices.BaseIndex`
         """
         self._index = index
         if df.index.duplicated().any():

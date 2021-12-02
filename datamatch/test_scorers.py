@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from datamatch.similarities import AbsoluteNumericalSimilarity, JaroWinklerSimilarity, RelativeNumericalSimilarity
-from datamatch.scorers import AlterScorer, RefuseToScoreException, SimSumScorer, AbsoluteScorer, MinScorer, MaxScorer
+from datamatch.scorers import AlterScorer, FuncScorer, RefuseToScoreException, SimSumScorer, AbsoluteScorer, MinScorer, MaxScorer
 
 
 class SimSumScorerTestCase(TestCase):
@@ -152,4 +152,24 @@ class AlterScorerTestCase(TestCase):
                 pd.Series(['jim', 21], index=columns, name=6)
             ),
             0.7866557310723826
+        )
+
+
+class FuncScorerTestCase(TestCase):
+    def test_score(self):
+        scorer = FuncScorer(lambda a, b: 1.0 if a.age == b.age else 0.5)
+        columns = ['name', 'age']
+        self.assertEqual(
+            scorer.score(
+                pd.Series(['john', 20], index=columns),
+                pd.Series(['jim', 21], index=columns)
+            ),
+            0.5
+        )
+        self.assertEqual(
+            scorer.score(
+                pd.Series(['john', 20], index=columns),
+                pd.Series(['jim', 20], index=columns)
+            ),
+            1.0
         )

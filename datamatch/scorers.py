@@ -19,14 +19,6 @@ class RefuseToScoreException(Exception):
 ScoreFunc = Callable[[pd.Series, pd.Series], float]
 
 
-def is_score_func(func: Callable) -> bool:
-    if type(func) != function:
-        return False
-    params = list(inspect.signature(func).parameters.values())
-    if len(params) != 2:
-        return False
-
-
 class BaseScorer(ABC):
     """Base class for all scorer classes.
 
@@ -213,3 +205,23 @@ class AlterScorer(BaseScorer):
         except KeyError:
             pass
         return score
+
+
+class FuncScorer(BaseScorer):
+    """Scores pairs by calling the given callback
+    """
+
+    def __init__(self, cb: ScoreFunc) -> None:
+        """
+        :param cb: Callback to calculate score
+        :type cb: Callable[[:class:`pandas:pandas.Series`, :class:`pandas:pandas.Series`], :obj:`float`]
+        """
+        self._cb = cb
+
+    def score(self, a: pd.Series, b: pd.Series) -> float:
+        """
+        .. hiding method's docstring
+
+        :meta private:
+        """
+        return self._cb(a, b)
