@@ -17,6 +17,7 @@ class TestThresholdMatcher(unittest.TestCase):
         dfa = pd.DataFrame(
             [
                 ["ab", "cd"],
+                ["rtx", "qw"]
             ],
             columns=cols
         )
@@ -32,9 +33,10 @@ class TestThresholdMatcher(unittest.TestCase):
             NoopIndex(), {"a": StringSimilarity()}, dfa, dfb
         )
 
-        self.assertEqual(matcher._pairs, [(1.0, 0, 0)])
+        self.assertEqual(matcher._pairs, [(0.8, 1, 2), (1.0, 0, 0)])
 
-        self.assertEqual(matcher.get_index_pairs_within_thresholds(), [(0, 0)])
+        self.assertEqual(
+            matcher.get_index_pairs_within_thresholds(), [(1, 2), (0, 0)])
 
         assert_frame_equal(
             matcher.get_sample_pairs(),
@@ -43,7 +45,22 @@ class TestThresholdMatcher(unittest.TestCase):
                     "sim_score": 1.0, "row_key": 0, "a": "ab", "b": "cd"},
                 {"score_range": "1.00-0.95", "pair_idx": 0,
                     "sim_score": 1.0, "row_key": 0, "a": "ab", "b": "cd"},
-            ], index=["score_range", "pair_idx", "sim_score", "row_key"]))
+                {"score_range": "0.85-0.80", "pair_idx": 0,
+                    "sim_score": 0.8, "row_key": 1, "a": "rtx", "b": "qw"},
+                {"score_range": "0.85-0.80", "pair_idx": 0,
+                    "sim_score": 0.8, "row_key": 2, "a": "rt", "b": "qw"},
+            ], index=["score_range", "pair_idx", "sim_score", "row_key"])
+        )
+
+        assert_frame_equal(
+            matcher.get_sample_pairs(include_exact_matches=False),
+            pd.DataFrame.from_records([
+                {"score_range": "0.85-0.80", "pair_idx": 0,
+                    "sim_score": 0.8, "row_key": 1, "a": "rtx", "b": "qw"},
+                {"score_range": "0.85-0.80", "pair_idx": 0,
+                    "sim_score": 0.8, "row_key": 2, "a": "rt", "b": "qw"},
+            ], index=["score_range", "pair_idx", "sim_score", "row_key"])
+        )
 
         assert_frame_equal(
             matcher.get_all_pairs(),
@@ -52,7 +69,22 @@ class TestThresholdMatcher(unittest.TestCase):
                     "row_key": 0, "a": "ab", "b": "cd"},
                 {"pair_idx": 0, "sim_score": 1.0,
                     "row_key": 0, "a": "ab", "b": "cd"},
-            ], index=["pair_idx", "sim_score", "row_key"]))
+                {"pair_idx": 1, "sim_score": 0.8,
+                    "row_key": 1, "a": "rtx", "b": "qw"},
+                {"pair_idx": 1, "sim_score": 0.8,
+                    "row_key": 2, "a": "rt", "b": "qw"},
+            ], index=["pair_idx", "sim_score", "row_key"])
+        )
+
+        assert_frame_equal(
+            matcher.get_all_pairs(include_exact_matches=False),
+            pd.DataFrame.from_records([
+                {"pair_idx": 1, "sim_score": 0.8,
+                    "row_key": 1, "a": "rtx", "b": "qw"},
+                {"pair_idx": 1, "sim_score": 0.8,
+                    "row_key": 2, "a": "rt", "b": "qw"},
+            ], index=["pair_idx", "sim_score", "row_key"])
+        )
 
     def test_ensure_unique_index(self):
         dfa = pd.DataFrame(
@@ -211,6 +243,17 @@ class TestThresholdMatcher(unittest.TestCase):
                 'cluster_idx pair_idx sim_score row_key                       ',
                 '0           0        1.000000  0             john           5',
                 '                               1              jim           5',
+                '1           0        0.941667  2              ted           3',
+                '                               3             tedd           2',
+            ]),
+        )
+
+        self.assertEqual(
+            matcher.get_clusters_within_threshold(
+                include_exact_matches=False).to_string(),
+            '\n'.join([
+                '                                       first_name  attract_id',
+                'cluster_idx pair_idx sim_score row_key                       ',
                 '1           0        0.941667  2              ted           3',
                 '                               3             tedd           2',
             ]),

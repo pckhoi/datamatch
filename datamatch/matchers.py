@@ -234,7 +234,7 @@ class ThresholdMatcher(object):
             self._get_clusters_dict_within_thresholds(lower_bound, upper_bound)
         ]
 
-    def get_clusters_within_threshold(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
+    def get_clusters_within_threshold(self, lower_bound=0.7, upper_bound=1, include_exact_matches: bool = True) -> pd.DataFrame:
         """Returns all clusters between a lower bound and upper bound.
 
         :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
@@ -242,6 +242,9 @@ class ThresholdMatcher(object):
 
         :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
+
+        :param include_exact_matches: Includes clusters with score = 1.0.
+        :type include_exact_matches: :obj:`bool`
 
         :return: A multi-indexed frame that contains all matched clusters.
         :rtype: :class:`pandas:pandas.DataFrame`
@@ -254,6 +257,8 @@ class ThresholdMatcher(object):
             ).values()
         ], key=lambda x: x[0][0], reverse=True)
         for cluster_idx, cluster in enumerate(clusters):
+            if not include_exact_matches and sum(score for score, _, _ in cluster) == len(cluster):
+                continue
             for pair_idx, pair in enumerate(cluster):
                 sim_score, idx_a, idx_b = pair
                 records.append(dict([
@@ -284,7 +289,7 @@ class ThresholdMatcher(object):
             bisect_left(self._scores, lower_bound):
             bisect(self._scores, upper_bound)]]
 
-    def get_sample_pairs(self, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05) -> pd.DataFrame:
+    def get_sample_pairs(self, sample_counts=5, lower_bound=0.7, upper_bound=1, step=0.05, include_exact_matches: bool = True) -> pd.DataFrame:
         """Returns samples of record pairs for each range of similarity scores.
 
         :param sample_counts: The number of samples in each range.
@@ -298,6 +303,9 @@ class ThresholdMatcher(object):
 
         :param step: The width of each range.
         :type step: :obj:`float`
+
+        :param include_exact_matches: Includes pairs with score = 1.0.
+        :type include_exact_matches: :obj:`bool`
 
         :return: A multi-indexed frame that only contain samples for each range.
         :rtype: :class:`pandas:pandas.DataFrame`
@@ -314,6 +322,8 @@ class ThresholdMatcher(object):
             ][:sample_counts]
             pairs.reverse()
             for pair_idx, pair in enumerate(pairs):
+                if not include_exact_matches and pair[0] == 1:
+                    continue
                 sim_score, idx_a, idx_b = pair
                 sample_records.append(dict([
                     ("score_range", score_range), ("pair_idx", pair_idx),
@@ -327,7 +337,7 @@ class ThresholdMatcher(object):
             sample_records,
             index=["score_range", "pair_idx", "sim_score", "row_key"])
 
-    def get_all_pairs(self, lower_bound=0.7, upper_bound=1) -> pd.DataFrame:
+    def get_all_pairs(self, lower_bound=0.7, upper_bound=1, include_exact_matches: bool = True) -> pd.DataFrame:
         """Returns all matching pairs between a lower bound and an upper bound.
 
         :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
@@ -335,6 +345,9 @@ class ThresholdMatcher(object):
 
         :param upper_bound: The upper threshold above which pairs won't be included, defaults to 1.
         :type upper_bound: :obj:`float`
+
+        :param include_exact_matches: Includes pairs with score = 1.0.
+        :type include_exact_matches: :obj:`bool`
 
         :return: A multi-indexed dataframe that only contain samples for each range.
         :rtype: :class:`pandas:pandas.DataFrame`
@@ -345,6 +358,8 @@ class ThresholdMatcher(object):
             bisect(self._scores, upper_bound)])
         for pair_idx, pair in enumerate(pairs):
             sim_score, idx_a, idx_b = pair
+            if not include_exact_matches and sim_score == 1:
+                continue
             records.append(dict([
                 ("pair_idx", pair_idx), ("sim_score", sim_score), ("row_key", idx_a)
             ] + list(self._pairer.frame_a.loc[idx_a].to_dict().items())))
@@ -355,7 +370,10 @@ class ThresholdMatcher(object):
             records,
             index=["pair_idx", "sim_score", "row_key"])
 
-    def save_pairs_to_excel(self, name: str, match_threshold: float, sample_counts: int = 5, lower_bound: float = 0.7, step: float = 0.05) -> None:
+    def save_pairs_to_excel(
+        self, name: str, match_threshold: float, sample_counts: int = 5, lower_bound: float = 0.7,
+        step: float = 0.05, include_exact_matches: bool = True
+    ) -> None:
         """Saves matching pairs to an Excel file.
 
         This will create an Excel file with 3 sheets:
@@ -381,14 +399,17 @@ class ThresholdMatcher(object):
         :param step: The width of each range in the "Sample pairs" sheet.
         :type step: :obj:`float`
 
+        :param include_exact_matches: Includes pairs with score = 1.0.
+        :type include_exact_matches: :obj:`bool`
+
         :rtype: :obj:`None`
         """
         with pd.ExcelWriter(name) as writer:
             self.get_sample_pairs(
-                sample_counts, lower_bound, 1, step
+                sample_counts, lower_bound, 1, step, include_exact_matches
             ).to_excel(writer, sheet_name='Sample pairs')
             self.get_all_pairs(
-                lower_bound, 1
+                lower_bound, 1, include_exact_matches
             ).to_excel(writer, sheet_name='All pairs')
             self._decision_series(
                 match_threshold
@@ -402,7 +423,7 @@ class ThresholdMatcher(object):
         dec_tups = list(itertools.zip_longest(*dec.items()))
         return pd.Series(list(dec_tups[1]), index=list(dec_tups[0]))
 
-    def save_clusters_to_excel(self, name: str, match_threshold: float, lower_bound: float = 0.7) -> None:
+    def save_clusters_to_excel(self, name: str, match_threshold: float, lower_bound: float = 0.7, include_exact_matches: bool = True) -> None:
         """Save matched clusters to an Excel file.
 
         This will create an Excel file with two sheets:
@@ -423,11 +444,15 @@ class ThresholdMatcher(object):
         :param lower_bound: The lower threshold below which pairs won't be included, defaults to 0.7.
         :type lower_bound: :obj:`float`
 
+        :param include_exact_matches: Includes clusters with score = 1.0.
+        :type include_exact_matches: :obj:`bool`
+
         :rtype: :obj:`None`
         """
         with pd.ExcelWriter(name) as writer:
             self.get_clusters_within_threshold(
-                lower_bound
+                lower_bound,
+                include_exact_matches
             ).to_excel(writer, sheet_name='All clusters')
             self._decision_series(
                 match_threshold
